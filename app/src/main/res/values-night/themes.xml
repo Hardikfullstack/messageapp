@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="CustomPickerDialogStyle" parent="android:Theme.Material.Dialog">
+        <item name="android:colorAccent">@color/picker_primary</item>
+        <item name="android:colorPrimary">@color/picker_primary</item>
+        <item name="colorAccent">@color/picker_primary</item>
+        <item name="colorPrimary">@color/picker_primary</item>
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:colorBackground">@color/bg_primary</item>
+        <item name="android:datePickerStyle">@style/CustomDatePickerStyle</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/CustomDatePickerButtonStyle</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/CustomDatePickerButtonStyle</item>
+    </style>
+
+    <style name="CustomDatePickerStyle" parent="android:Widget.Material.DatePicker">
+        <item name="android:calendarViewStyle">@style/CustomCalendarViewStyle</item>
+    </style>
+
+</resources>

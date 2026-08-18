@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="primary">#FF105FE9</color>
+    <color name="bg_primary">#FFFCFDFF</color>
+    <color name="text_title">#FF1B1B24</color>
+    <color name="text_des">#FF464555</color>
+    <color name="light_gray">#FFF3F3F3</color>
+    <!-- light_gray is too close to bg_primary in light mode to give ad cards visible contrast —
+         this is deliberately a bit darker, just for that purpose. -->
+    <color name="native_ad_card_bg">#FFEBEBEF</color>
+    <color name="light_color_gray">#FF82828E</color>
+    <color name="picker_primary">#3478F5</color>
+    <color name="menu_bg">#FFFFFFFF</color>
+    <color name="selection_blue_bg">#FFEBF1FB</color>
+    <color name="option_row_text">#FF464555</color>
+    <color name="message_text">#FF464555</color>
+    <color name="chat_icon_secondary">#FF464555</color>
+    <color name="call_green">#FF2DBA68</color>
+</resources>

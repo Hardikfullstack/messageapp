@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Messages" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:colorBackground">@color/bg_primary</item>
+        <item name="android:statusBarColor">@color/bg_primary</item>
+        <item name="android:navigationBarColor">@color/bg_primary</item>
+    </style>
+
+    <!-- Android 12+ always shows a system splash screen on cold start, before the first frame is
+         drawn — with no explicit theme for it, the OS falls back to the launcher icon on a plain
+         background, which flashes visibly before SplashScreen.kt's own gradient+logo composable
+         takes over. windowSplashScreenAnimatedIcon is set to transparent (no separate small icon
+         drawn) and the background matches SplashScreen.kt's gradient top color, so that flash
+         either isn't visible at all or blends straight into the real splash. Applied only to
+         MainActivity in the manifest — installSplashScreen() (called there) switches to
+         postSplashScreenTheme once the first frame is ready. -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/primary</item>
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/Theme.Messages</item>
+    </style>
+
+    <style name="Theme.EmojiAppCompat" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:colorBackground">@color/bg_primary</item>
+        <item name="android:colorControlNormal">@color/text_des</item>
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="colorAccent">@color/primary</item>
+        <item name="colorControlNormal">@color/text_des</item>
+    </style>
+
+    <style name="CustomPickerDialogStyle" parent="android:Theme.Material.Light.Dialog">
+        <item name="android:colorAccent">@color/picker_primary</item>
+        <item name="android:colorPrimary">@color/picker_primary</item>
+        <item name="colorAccent">@color/picker_primary</item>
+        <item name="colorPrimary">@color/picker_primary</item>
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:colorBackground">@color/bg_primary</item>
+        <item name="android:datePickerStyle">@style/CustomDatePickerStyle</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/CustomDatePickerButtonStyle</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/CustomDatePickerButtonStyle</item>
+    </style>
+
+    <style name="CustomDatePickerButtonStyle" parent="android:Widget.Material.Button.Borderless">
+        <item name="android:textColor">@color/picker_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="CustomDatePickerStyle" parent="android:Widget.Material.Light.DatePicker">
+        <item name="android:calendarViewStyle">@style/CustomCalendarViewStyle</item>
+    </style>
+
+    <style name="CustomCalendarViewStyle" parent="android:Widget.Material.CalendarView">
+        <item name="android:dateTextAppearance">@style/CustomDatePickerDateStyle</item>
+        <item name="android:weekDayTextAppearance">@style/CustomDatePickerWeekDayStyle</item>
+    </style>
+
+    <style name="CustomDatePickerDateStyle" parent="android:TextAppearance.Material.Body1">
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="CustomDatePickerWeekDayStyle" parent="android:TextAppearance.Material.Body2">
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+</resources>

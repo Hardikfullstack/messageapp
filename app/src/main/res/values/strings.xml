@@ -1,0 +1,503 @@
+<resources>
+    <string name="app_name">Messages</string>
+    <!-- Manifest launcher label only — the "#" prefix makes the app sort to the top of Android's
+         alphabetical app lists (e.g. "Display over other apps" settings). Deliberately kept
+         separate from app_name so it doesn't leak into in-app UI (About screen, emails, etc). -->
+    <string name="app_launcher_name">#Messages</string>
+
+    <!-- Home screen -->
+    <string name="filter_inbox">Inbox</string>
+    <string name="filter_known">Known</string>
+    <string name="filter_unknown">Unknown</string>
+    <string name="filter_transactions">Transactions</string>
+    <string name="filter_otps">OTPs</string>
+    <string name="filter_offers">Offers</string>
+    <string name="home_menu_archived">Archived</string>
+    <string name="home_menu_scheduled">Scheduled</string>
+    <string name="home_menu_backup_restore">Backup &amp; Restore</string>
+    <string name="home_menu_starred_message">Starred Message</string>
+    <string name="home_menu_mark_all_read">Mark all as read</string>
+    <string name="home_menu_select">Select</string>
+    <string name="home_menu_select_all">Select all</string>
+    <string name="home_menu_unselect_all">Unselect all</string>
+    <string name="home_menu_block_list">Block List</string>
+    <string name="home_menu_settings">Settings</string>
+    <string name="home_syncing">Syncing all your messages…</string>
+    <string name="home_no_messages_found">No messages found</string>
+    <string name="home_no_messages_found_filtered">No messages found for the selected filter</string>
+
+    <string name="snackbar_undo">Undo</string>
+    <string name="snackbar_messages_archived">%1$d message(s) archived</string>
+    <string name="snackbar_group_archived">Group archived</string>
+    <string name="snackbar_message_archived">Message archived</string>
+    <string name="snackbar_1_group_archived_bulk">1 group archived</string>
+    <string name="snackbar_n_groups_archived_bulk">%1$d groups archived</string>
+
+    <string name="block_report_spam_title">Block &amp; Report Spam?</string>
+    <string name="block_report_spam_text">You won\'t receive messages from this sender.</string>
+    <string name="action_block">BLOCK</string>
+    <string name="action_delete">DELETE</string>
+
+    <string name="delete_message_title">Delete Message?</string>
+    <string name="delete_conversation_text">This conversation will be permanently deleted from your device.</string>
+    <string name="toast_1_message_deleted">1 message deleted successfully</string>
+    <string name="toast_n_messages_deleted">%1$d messages deleted successfully</string>
+    <string name="toast_1_contact_blocked">1 contact blocked</string>
+    <string name="toast_n_contacts_blocked">%1$d contacts blocked</string>
+    <string name="toast_message_deleted">Message deleted</string>
+
+    <string name="delete_group_title">Delete Group?</string>
+    <string name="delete_group_text">This group and its message history will be permanently deleted from your device.</string>
+    <string name="toast_group_deleted">Group deleted</string>
+    <string name="delete_n_groups_title">Delete %1$d Groups?</string>
+    <string name="delete_groups_text">Selected group(s) and their message history will be permanently deleted from your device.</string>
+    <string name="toast_groups_deleted">Group(s) deleted</string>
+
+    <string name="draft_prefix">Draft: </string>
+    <string name="mms_photo_placeholder">Photo</string>
+    <string name="content_desc_pinned">Pinned</string>
+    <string name="fallback_group_name">Group</string>
+    <string name="no_messages_yet">No messages yet</string>
+
+    <!-- Chat screen -->
+    <string name="toast_copied">Copied</string>
+    <string name="share_message_title">Share Message</string>
+    <string name="content_desc_call">Call</string>
+    <string name="content_desc_info">Info</string>
+    <string name="toast_unblock_to_send">Unblock to send message</string>
+    <string name="toast_group_mms_unsupported">Sending images isn\'t supported in groups yet</string>
+    <string name="toast_unblock_to_schedule">Unblock to schedule message</string>
+    <string name="cant_reply_text">You can\'t reply to this sender.</string>
+    <string name="content_desc_blocked">Blocked</string>
+    <string name="action_unblock">Unblock</string>
+    <string name="toast_contact_unblocked">Contact unblocked</string>
+    <string name="content_desc_no_messages">No Messages</string>
+    <string name="say_hi_text">Say hi to start the conversation!</string>
+    <string name="content_desc_attached_image">Attached image</string>
+    <string name="content_desc_starred">Starred</string>
+    <string name="sending_text">Sending…</string>
+    <string name="failed_to_send_retry">Failed to send · Tap to retry</string>
+    <string name="toast_unable_load_captured_image">Unable to load the captured image</string>
+    <string name="toast_unable_load_selected_image">Unable to load the selected image</string>
+    <string name="toast_no_internet">No internet connection</string>
+    <string name="offline_dialog_title">No Internet Connection</string>
+    <string name="offline_dialog_desc">You\'re offline right now. Sending and receiving texts still works fine — this only affects things that need the internet.</string>
+    <string name="offline_dialog_button">Open Wi-Fi Settings</string>
+    <string name="maintenance_dialog_title">Under Maintenance</string>
+    <string name="maintenance_dialog_desc">We\'re making some improvements right now. Please check back in a little while.</string>
+    <string name="maintenance_dialog_exit_button">Exit App</string>
+
+    <!-- In-app update -->
+    <string name="update_title">Update Available</string>
+    <string name="update_desc">A new version of the app is available with the latest fixes and improvements. Update now for the best experience.</string>
+    <string name="update_button">Update Now</string>
+    <string name="update_later">Later</string>
+    <string name="toast_turn_on_location">Please turn on Location to share your location</string>
+    <string name="toast_unable_get_location">Unable to get current location. Make sure GPS has a clear signal and try again.</string>
+    <string name="menu_contacts">Contacts</string>
+    <string name="menu_camera">Camera</string>
+    <string name="menu_gallery">Gallery</string>
+    <string name="menu_schedule">Schedule</string>
+    <string name="menu_location">Location</string>
+    <string name="content_desc_remove">Remove</string>
+    <string name="scheduled_for_text">Scheduled for</string>
+    <string name="content_desc_cancel_schedule">Cancel Schedule</string>
+    <string name="content_desc_toggle_menu">Toggle Menu</string>
+    <string name="type_message_placeholder">Type Message…</string>
+    <string name="content_desc_emoji">Emoji</string>
+    <string name="toast_scheduled_time_future">Scheduled time must be in the future</string>
+    <string name="content_desc_send">Send</string>
+    <string name="permission_required_title">Permission Required</string>
+    <string name="camera_permission_text">Camera permission is required to take photos. Please grant it in app settings.</string>
+    <string name="action_ok">OK</string>
+    <string name="location_permission_text">Location permission is required to share your location. Please grant it in app settings.</string>
+    <string name="toast_no_app_for_link">No app found to open this link</string>
+    <string name="toast_no_app_for_dialer">No app found to open the dialer</string>
+    <string name="unblock_instructions_text">To move this conversation out of \'Blocking\' and get messages again, unblock \'%1$s\'</string>
+    <string name="delete_messages_confirm_text">Are you sure you want to delete the selected message(s)? This action cannot be undone.</string>
+    <string name="toast_messages_deleted_generic">Message(s) deleted</string>
+    <string name="contact_insert_template">[Name:] %1$s\n[Number:] %2$s</string>
+    <string name="select_time_title">SELECT TIME</string>
+    <string name="content_desc_switch_keyboard_input">Switch to Keyboard Input</string>
+    <string name="content_desc_switch_dial_input">Switch to Dial Input</string>
+    <string name="action_cancel">Cancel</string>
+
+    <!-- Chat details screen -->
+    <string name="chat_details_title">Details</string>
+    <string name="group_details_title">Group Details</string>
+    <string name="content_desc_group_avatar">Group avatar</string>
+    <string name="content_desc_change_group_photo">Change group photo</string>
+    <string name="content_desc_edit_group_name">Edit group name</string>
+    <string name="content_desc_profile">Profile</string>
+    <string name="members_count_title">MEMBERS (%1$d)</string>
+    <string name="action_unarchive">Unarchive</string>
+    <string name="action_archive">Archive</string>
+    <string name="notifications_label">Notifications</string>
+    <string name="delete_conversation_label">Delete Conversation</string>
+    <string name="unblock_contact_label">Unblock Contact</string>
+    <string name="block_contact_label">Block Contact</string>
+    <string name="delete_conversation_title">Delete Conversation?</string>
+    <string name="unblock_contact_title">Unblock Contact?</string>
+    <string name="remove_contact_blocklist_text">Remove this contact from your blocked list?</string>
+    <string name="action_unblock_caps">UNBLOCK</string>
+    <string name="add_member_label">Add Member</string>
+    <string name="content_desc_remove_member_template">Remove %1$s</string>
+    <string name="rename_group_title">Rename Group</string>
+    <string name="action_save">SAVE</string>
+    <string name="action_cancel_caps">CANCEL</string>
+    <string name="action_remove">REMOVE</string>
+    <string name="remove_member_title">Remove Member?</string>
+    <string name="remove_member_text_template">%1$s will be removed from this group.</string>
+
+    <!-- Archived screen -->
+    <string name="snackbar_1_group_unarchived">1 group unarchived</string>
+    <string name="snackbar_n_groups_unarchived">%1$d groups unarchived</string>
+    <string name="snackbar_messages_unarchived">%1$d message(s) unarchived</string>
+    <string name="content_desc_new_message">New Message</string>
+    <string name="archived_messages_title">Archived Messages</string>
+    <string name="content_desc_archived_empty_state">Archived Empty State</string>
+    <string name="archived_empty_state_text">Move conversations here to keep\nyour inbox clean.</string>
+
+    <!-- Blocked messages screen -->
+    <string name="content_desc_close">Close</string>
+    <string name="blocked_messages_title">Blocked Messages</string>
+    <string name="content_desc_delete">Delete</string>
+    <string name="drop_messages_title">Drop Messages</string>
+    <string name="drop_messages_desc">Block incoming messages from blocked\nsenders instead of hiding them.</string>
+    <string name="content_desc_empty_blocked_list">Empty Blocked List</string>
+    <string name="empty_blocked_list_text">You haven\'t blocked any contacts yet.\nBlocked contacts will appear here.</string>
+    <string name="blocked_contact_fallback">Blocked Contact</string>
+    <string name="snackbar_1_contact_unblocked">1 contact unblocked</string>
+    <string name="snackbar_n_contacts_unblocked">%1$d contacts unblocked</string>
+    <string name="delete_messages_title">Delete Messages?</string>
+    <string name="delete_blocked_messages_text">This will permanently delete messages from the selected blocked contacts.</string>
+
+    <!-- Starred messages screen -->
+    <string name="starred_messages_title">Starred messages</string>
+    <string name="content_desc_no_starred_messages">No Starred Messages</string>
+    <string name="no_starred_messages_text">No starred messages yet. Star\nmessage to see it here.</string>
+
+    <!-- Scheduled messages screen -->
+    <string name="scheduled_messages_title">Scheduled Messages</string>
+    <string name="content_desc_add_scheduled_message">Add Scheduled Message</string>
+    <string name="content_desc_no_scheduled_messages">No Scheduled Messages</string>
+    <string name="no_scheduled_messages_text">Create a scheduled message to\nget started.</string>
+    <string name="scheduled_message_dialog_title">Scheduled Message</string>
+    <string name="option_update_message">Update Message</string>
+    <string name="option_send_now">Send Now</string>
+    <string name="option_copy_text">Copy Text</string>
+    <string name="notif_action_copy_code">Copy Code</string>
+    <string name="otp_code_copied_toast">Code copied</string>
+    <string name="otp_copy_label">Copy OTP</string>
+    <string name="consent_not_available_toast">This option isn\'t available in your country</string>
+    <string name="option_delete_message">Delete Message</string>
+    <string name="toast_sending_message">Sending message…</string>
+    <string name="toast_text_copied">Text copied</string>
+
+    <!-- Backup & Restore screen -->
+    <string name="backup_never">Never</string>
+    <string name="toast_storage_permission_required">Storage permission is required for backup &amp; restore</string>
+    <string name="backup_label">Backup</string>
+    <string name="restore_label">Restore</string>
+    <string name="select_a_backup">Select a backup</string>
+    <string name="toast_backup_created">Backup created successfully</string>
+    <string name="toast_backup_failed">Backup failed. Please try again.</string>
+    <string name="backup_now_button">Backup Now</string>
+    <string name="delete_backup_title">Delete Backup?</string>
+    <string name="delete_backup_text">This backup file will be permanently deleted from your device.</string>
+    <string name="restore_from_backup_title">Restore from backup</string>
+    <string name="restore_from_backup_text">Recover your messages and settings from a previous backup.</string>
+    <string name="action_restore">RESTORE</string>
+    <string name="restore_summary_messages">%1$d message(s)</string>
+    <string name="restore_summary_groups">, %1$d group(s)</string>
+    <string name="restore_summary_suffix"> restored</string>
+    <string name="toast_restore_failed">Restore failed. Please try again.</string>
+    <string name="content_desc_delete_backup">Delete backup</string>
+    <string name="no_backups_found">No Backups found</string>
+    <string name="backup_messages_count_template">%1$d Messages | %2$s</string>
+
+    <!-- Contact notification screen -->
+    <string name="unknown_contact">Unknown</string>
+    <string name="tap_to_customize">Tap to Customize</string>
+    <string name="notification_channel_contact_fallback">Contact</string>
+    <string name="notification_channel_desc_template">Notifications for %1$s</string>
+    <string name="notification_channel_this_contact">this contact</string>
+    <string name="preview_show_name_and_message">Show name and message</string>
+    <string name="preview_show_name">Show name</string>
+    <string name="preview_hide_contents">Hide contents</string>
+    <string name="notification_previews_label">Notification Previews</string>
+    <string name="notification_previews_dialog_title">Notification previews</string>
+    <string name="wake_screen_label">Wake Screen</string>
+
+    <!-- Search screen -->
+    <string name="content_desc_back">Back</string>
+    <string name="search_messages_placeholder">Search messages</string>
+    <string name="content_desc_clear_search">Clear Search</string>
+    <string name="your_conversations_will_appear">Your Conversations will appear here</string>
+    <string name="result_in_messages">Result in messages</string>
+    <string name="no_results_found_template">No results found for \"%1$s\"</string>
+    <string name="match_1_message">1 message</string>
+    <string name="match_n_messages_template">%1$d messages</string>
+    <string name="n_members_template">%1$d members</string>
+
+    <!-- New chat screen -->
+    <string name="action_add">Add</string>
+    <string name="action_next">Next</string>
+    <string name="content_desc_create_group">Create Group</string>
+    <string name="new_chat_add_members_title">Add Members</string>
+    <string name="new_chat_select_members_title">Select Members</string>
+    <string name="new_chat_forward_to_title">Forward to</string>
+    <string name="new_chat_title">New Chat</string>
+    <string name="type_name_or_number_placeholder">Type a name or Phone number</string>
+    <string name="content_desc_clear">Clear</string>
+    <string name="content_desc_keypad_toggle">Keypad Toggle</string>
+    <string name="content_desc_remove_contact_template">Remove %1$s</string>
+    <string name="permission_required_contacts_text">Permission required to view contacts.</string>
+    <string name="no_results_found">No results found</string>
+
+    <!-- Add group name screen -->
+    <string name="new_group_title">New Group</string>
+    <string name="content_desc_add_group_photo">Add group photo</string>
+    <string name="add_image_label">Add Image</string>
+    <string name="group_name_placeholder">You can name the group now or skip</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="section_appearance">Appearance</string>
+    <string name="app_theme_label">App Theme</string>
+    <string name="font_size_label">Font Size</string>
+    <string name="app_language_label">App Language</string>
+    <string name="section_general">General</string>
+    <string name="delayed_sending_label">Delayed Sending</string>
+    <string name="delayed_sending_desc">Message will be send after some time</string>
+    <string name="swipe_actions_label">Swipe Actions</string>
+    <string name="swipe_actions_desc">Configure swipe actions for conversations</string>
+    <string name="delivery_confirmations_label">Delivery Confirmations</string>
+    <string name="delivery_confirmations_desc">confirm successful message delivery</string>
+    <string name="delete_old_messages_label">Delete Old Messages Automatically</string>
+    <string name="setting_never">Never</string>
+    <string name="delete_old_messages_dialog_desc">Messages older than the selected period will be automatically deleted from this device.</string>
+    <string name="delete_old_messages_daily">Daily</string>
+    <string name="delete_old_messages_weekly">Weekly</string>
+    <string name="delete_old_messages_monthly">Monthly</string>
+    <string name="delete_old_messages_yearly">Yearly</string>
+    <string name="delete_old_messages_days_field_label">Delete messages older than (days)</string>
+    <string name="delete_old_messages_days_placeholder">Number of days</string>
+    <string name="delete_old_messages_every_n_days">Every %1$d days</string>
+    <string name="delete_old_messages_confirm_title">Delete old messages automatically?</string>
+    <string name="delete_old_messages_confirm_desc_template">If you proceed, %1$d messages will be deleted now</string>
+    <string name="action_yes">YES</string>
+    <string name="delete_old_messages_deleting">Deleting messages…</string>
+    <string name="auto_compress_mms_label">Auto Compress MMS Attachments</string>
+    <string name="mms_compression_automatic">Automatic</string>
+    <string name="mms_compression_100kb">100 KB</string>
+    <string name="mms_compression_200kb">200 KB</string>
+    <string name="mms_compression_300kb">300 KB</string>
+    <string name="mms_compression_600kb">600 KB</string>
+    <string name="mms_compression_1000kb">1000 KB</string>
+    <string name="mms_compression_2000kb">2000 KB</string>
+    <string name="mms_compression_none">No compression</string>
+    <string name="sync_messages_label">Sync Messages</string>
+    <string name="resync_label">Re-sync</string>
+    <string name="syncing_label">Syncing…</string>
+    <string name="messages_synced_toast">Messages synced</string>
+    <string name="section_notification_calling">Notification &amp; Calling</string>
+    <string name="notification_label">Notification</string>
+    <string name="default_notification_channel_name">Default</string>
+    <string name="notif_action_button_title_template">Action Button %1$d</string>
+    <string name="notif_button_1_label">Button 1</string>
+    <string name="notif_button_2_label">Button 2</string>
+    <string name="notif_button_3_label">Button 3</string>
+    <string name="notif_action_reply">Reply</string>
+    <string name="section_quick_reply">Quick Reply</string>
+    <string name="quick_reply_desc">Popup for new messages</string>
+    <string name="tap_to_dismiss_label">Tap to dismiss</string>
+    <string name="tap_to_dismiss_desc">Tap outside of the popup to close it</string>
+    <string name="after_call_label">After call</string>
+    <string name="after_call_desc">Show after call screen</string>
+    <string name="after_call_disable_dialog_title">After call</string>
+    <string name="after_call_disable_dialog_desc">This feature shows a screen after each call where you can send a quick reply, set a reminder, or follow up with the contact.</string>
+    <string name="action_proceed">Proceed</string>
+    <string name="action_keep_it">Keep it</string>
+    <string name="section_about_us">About Us</string>
+    <string name="rate_app_label">Rate App</string>
+    <string name="rate_us_title">Rate us</string>
+    <string name="rate_us_subtitle">Enjoying the app?\nRate us and help us improve!</string>
+    <string name="rate_us_button">Rate on Google play</string>
+    <string name="rate_us_button_low">Rate</string>
+    <string name="rate_us_maybe_later">May be later</string>
+    <string name="toast_no_email_app">No email app found</string>
+    <string name="share_app_label">Share App</string>
+    <string name="share_app_text_template">This messaging app is amazing — fast, simple, and packed with great features. Give it a try: %1$s</string>
+    <string name="help_feedback_label">Help &amp; Feedback</string>
+    <string name="help_feedback_email_subject">Messages App Feedback</string>
+    <string name="privacy_policy_label">Privacy Policy</string>
+    <string name="consent_revoke_label">Consent Revoke</string>
+    <string name="about_messages_label">About Messages</string>
+    <string name="version_template">Version %1$s</string>
+    <string name="current_version_template">Current version: %1$s</string>
+    <string name="about_app_description">A simple, fast, and secure way to stay connected — send SMS &amp; MMS messages with a clean, modern experience.</string>
+    <string name="terms_conditions_label">Terms &amp; Conditions</string>
+    <string name="after_call_outgoing_template">Outgoing call · %1$s</string>
+    <string name="after_call_incoming_template">Incoming call · %1$s</string>
+    <string name="after_call_missed">Missed call</string>
+    <string name="after_call_private_number">Private Number</string>
+    <string name="after_call_duration_outgoing">%1$s outgoing call</string>
+    <string name="after_call_duration_incoming">%1$s incoming call</string>
+    <string name="after_call_just_now_template">Just Now (%1$s)</string>
+    <string name="menu_test_after_call">Test After Call</string>
+    <string name="after_call_quick_reply_1">Sorry, I can\'t talk right now</string>
+    <string name="after_call_quick_reply_2">Can I call you later?</string>
+    <string name="after_call_quick_reply_3">I\'m on my way</string>
+    <string name="after_call_write_personal">Write Personal message</string>
+    <string name="after_call_message_sent">Message sent</string>
+    <string name="after_call_no_reminder">No Reminder</string>
+    <string name="after_call_add_reminder">Add Reminder</string>
+    <string name="after_call_reminder_coming_soon">Reminders coming soon</string>
+    <string name="after_call_reminder_in_15_min">In 15 minutes</string>
+    <string name="after_call_reminder_in_30_min">In 30 minutes</string>
+    <string name="after_call_reminder_in_1_hour">In 1 hour</string>
+    <string name="after_call_reminder_tomorrow_morning">Tomorrow morning</string>
+    <string name="after_call_reminder_set_template">Reminder set for %1$s</string>
+    <string name="after_call_cancel_reminder">Cancel Reminder</string>
+    <string name="after_call_reminder_notification_title_template">Call back %1$s</string>
+    <string name="after_call_remind_me_about">Remind me about</string>
+    <string name="content_desc_edit">Edit</string>
+    <string name="after_call_action_add_contact">Add Contact</string>
+    <string name="after_call_action_message">Message</string>
+    <string name="after_call_action_send_mail">Send mail</string>
+    <string name="after_call_action_calendar">Calendar</string>
+    <string name="after_call_action_web">Web</string>
+    <string name="after_call_calendar_event_title_template">Call %1$s</string>
+    <string name="choose_theme_title">Choose theme</string>
+    <string name="theme_system_default">System Default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="font_size_dialog_title">Font size</string>
+    <string name="font_size_small">Small</string>
+    <string name="font_size_normal">Normal</string>
+    <string name="font_size_large">Large</string>
+
+    <!-- Choose language screen -->
+    <string name="choose_language_title">choose language</string>
+    <string name="content_desc_done">Done</string>
+
+    <!-- Ad loading screen -->
+    <string name="ad_is_loading">Ad is loading…</string>
+
+    <!-- Default SMS screen -->
+    <string name="content_desc_default_sms_illustration">Default SMS Illustration</string>
+    <string name="default_sms_description">Set this app as your default SMS app to send and receive messages.</string>
+    <string name="set_default_sms_button">Set default SMS app</string>
+
+    <!-- Permission screen -->
+    <string name="permission_miui_title">Permission Required</string>
+    <string name="permissions_required_title">Permissions Required</string>
+    <string name="permission_overlay_desc">We need permission to display pop-ups over other apps for quick replies and call features. This is required.</string>
+    <string name="permission_miui_desc">Your device requires extra permissions for reliable background operation. Please follow the steps below.</string>
+    <string name="action_go_to_settings">Go to Settings</string>
+    <string name="action_grant_permission">Grant Permission</string>
+    <string name="action_grant_autostart_permission">Grant Auto-Start Permission</string>
+
+    <!-- Onboarding screen -->
+    <string name="welcome_to">Welcome to</string>
+    <string name="text_messaging">Text Messaging</string>
+    <string name="feature_sms_management_title">SMS Management</string>
+    <string name="feature_sms_management_desc">Easily send, receive, and organize your text messages in one place.</string>
+    <string name="feature_smart_notifications_title">Smart Notifications</string>
+    <string name="feature_smart_notifications_desc">Get instant alerts for new messages and important conversations.</string>
+    <string name="feature_message_scheduling_title">Message Scheduling</string>
+    <string name="feature_message_scheduling_desc">Schedule messages to be sent automatically at your preferred time.</string>
+    <string name="feature_after_call_title">After Call</string>
+    <string name="feature_after_call_desc">Access quick messaging actions after every call.</string>
+    <string name="action_agree_continue">Agree &amp; Continue</string>
+    <string name="privacy_agree_prefix">By continuing, you agree to our </string>
+    <string name="privacy_policy_link_text">Privacy Policy.</string>
+    <string name="permission_needed_title">Permission Needed</string>
+    <string name="permission_needed_desc">This app requires Phone permissions to function properly. Since it was denied, please enable it manually:</string>
+    <string name="permission_step_1">1. Click \'Open Settings\'</string>
+    <string name="permission_step_2">2. Tap on \'Permissions\'</string>
+    <string name="permission_step_3">3. Tap on \'Phone\' or \'Call logs\'</string>
+    <string name="permission_step_4">4. Select \'Allow\'</string>
+    <string name="action_open_settings">Open Settings</string>
+
+    <!-- Image viewer screen -->
+    <string name="content_desc_rotate_image">Rotate image</string>
+    <string name="content_desc_image">Image</string>
+
+    <!-- Common top bars -->
+    <string name="content_desc_pin_unpin">Pin/Unpin</string>
+    <string name="content_desc_more">More</string>
+    <string name="menu_add_to_contacts">Add to Contacts</string>
+    <string name="menu_mark_as_read">Mark as read</string>
+    <string name="menu_mark_as_unread">Mark as unread</string>
+    <string name="menu_block">Block</string>
+    <string name="content_desc_star">Star</string>
+    <string name="content_desc_copy">Copy</string>
+    <string name="menu_share">Share</string>
+    <string name="menu_forward">Forward</string>
+    <string name="menu_view_details">View Details</string>
+    <string name="content_desc_search_up">Search up</string>
+    <string name="content_desc_search_down">Search down</string>
+    <string name="search_results_zero">0 results</string>
+    <string name="search_results_count_template">%1$d of %2$d results</string>
+
+    <!-- Alarm permission dialog -->
+    <string name="alarm_permission_title">Alarm &amp; Reminder Permission</string>
+    <string name="alarm_permission_desc">To send scheduled messages on\ntime, we need alarm permission</string>
+    <string name="action_allow_permission">Allow Permission</string>
+    <string name="action_not_now">Not Now</string>
+
+    <!-- Message details dialog -->
+    <string name="message_details_title">Message details</string>
+    <string name="direction_from">From</string>
+    <string name="direction_to">To</string>
+    <string name="type_sms_label">Type: sms</string>
+    <string name="label_value_template">%1$s: %2$s</string>
+    <string name="received_label">Received</string>
+    <string name="sent_label">Sent</string>
+
+    <!-- Filter dialog -->
+    <string name="filter_title">Filter</string>
+    <string name="filter_default">Default</string>
+    <string name="filter_today">Today</string>
+    <string name="filter_month">Month</string>
+    <string name="filter_year">Year</string>
+    <string name="filter_date_range">Date Range</string>
+    <string name="action_reset">RESET</string>
+    <string name="action_apply">APPLY</string>
+    <string name="select_month_title">Select month</string>
+    <string name="select_year_title">Select year</string>
+    <string name="month_january">January</string>
+    <string name="month_february">February</string>
+    <string name="month_march">March</string>
+    <string name="month_april">April</string>
+    <string name="month_may">May</string>
+    <string name="month_june">June</string>
+    <string name="month_july">July</string>
+    <string name="month_august">August</string>
+    <string name="month_september">September</string>
+    <string name="month_october">October</string>
+    <string name="month_november">November</string>
+    <string name="month_december">December</string>
+
+    <!-- Delayed sending dialog -->
+    <string name="delayed_sending_dialog_title">Delayed sending</string>
+    <string name="delayed_sending_no_delay">No delay</string>
+    <string name="delayed_sending_3s">3 seconds</string>
+    <string name="delayed_sending_5s">5 seconds</string>
+    <string name="delayed_sending_10s">10 seconds</string>
+    <string name="content_desc_delayed_message">Delayed</string>
+    <string name="delivered_at_template">Delivered %1$s</string>
+    <string name="chat_date_today">Today</string>
+    <string name="content_desc_scroll_to_top">Scroll to top</string>
+    <string name="content_desc_scroll_to_bottom">Scroll to bottom</string>
+
+    <!-- Swipe actions screen -->
+    <string name="right_swipe_label">Right Swipe</string>
+    <string name="left_swipe_label">Left Swipe</string>
+    <string name="action_change">Change</string>
+    <string name="swipe_action_none">None</string>
+    <string name="swipe_action_delete">Delete</string>
+    <string name="choose_swipe_action_title">Choose Action</string>
+</resources>

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(powershell -c 'Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\('\\\\''archived_main.webp'\\\\''\\); Write-Host $img.Width $img.Height')",
+      "Bash(xxd -l 64 archived_main.webp)",
+      "Bash(./gradlew.bat :app:compileDebugKotlin -q)",
+      "Bash(./gradlew.bat :app:assembleDebug -q)"
+    ]
+  }
+}

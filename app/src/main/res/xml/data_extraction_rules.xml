@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+   Sample data extraction rules file; uncomment and customize as necessary.
+   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
+   for details.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Only the onboarding/permission-flow state flags (has-seen-onboarding, has-already-
+             prompted-for-overlay-permission, etc) are excluded — those track facts about THIS
+             install's actual OS-level permission grants, which never survive a reinstall, so
+             restoring just the flag (without the real permission) causes screens to be silently
+             skipped. Genuine user preferences (theme, language, delayed-sending, per-contact
+             notification settings) are NOT excluded — restoring those on a new device/reinstall
+             is good UX, same as most published apps do. -->
+        <exclude domain="sharedpref" path="app_prefs.xml" />
+    </cloud-backup>
+    <!--
+    <device-transfer>
+        <include .../>
+        <exclude .../>
+    </device-transfer>
+    -->
+</data-extraction-rules>

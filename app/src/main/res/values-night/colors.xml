@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_primary">#FF07090D</color>
+    <color name="text_title">#FFFFFFFF</color>
+    <color name="text_des">#FF9E9E9E</color>
+    <color name="light_gray">#FF1F2023</color>
+    <color name="native_ad_card_bg">#FF1F2023</color>
+    <color name="light_color_gray">#FF8E8E93</color>
+    <color name="menu_bg">#FF1F2023</color>
+    <color name="selection_blue_bg">#FF1B2E4D</color>
+    <color name="option_row_text">#FFFFFFFF</color>
+    <color name="message_text">#FFFFFFFF</color>
+    <color name="chat_icon_secondary">#FFFFFFFF</color>
+</resources>
