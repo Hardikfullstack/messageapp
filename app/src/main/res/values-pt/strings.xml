@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Messages</string>
-    <string name="app_launcher_name">#Messages</string>
+    <string name="app_name">Messages: SMS &amp; Texting</string>
+    <string name="app_launcher_name">#Messages: SMS &amp; Texting</string>
 
     <string name="filter_inbox">Caixa de entrada</string>
     <string name="filter_known">Conhecidos</string>
@@ -335,6 +335,7 @@
     <string name="after_call_reminder_set_template">Lembrete definido para %1$s</string>
     <string name="after_call_cancel_reminder">Cancelar lembrete</string>
     <string name="after_call_reminder_notification_title_template">Ligar de volta para %1$s</string>
+    <string name="after_call_fallback_notification_title">Informações da chamada</string>
     <string name="after_call_remind_me_about">Lembrar-me sobre</string>
     <string name="content_desc_edit">Editar</string>
     <string name="after_call_action_add_contact">Adicionar contato</string>
@@ -381,12 +382,18 @@
     <string name="privacy_agree_prefix">Ao continuar, você concorda com nossa </string>
     <string name="privacy_policy_link_text">Política de Privacidade.</string>
     <string name="permission_needed_title">Permissão necessária</string>
-    <string name="permission_needed_desc">Este aplicativo requer permissões de telefone para funcionar corretamente. Como foi negada, ative-a manualmente:</string>
+    <string name="permission_needed_desc">Este aplicativo requer permissões de %1$s para funcionar corretamente. Como foi negada, ative-a manualmente:</string>
     <string name="permission_step_1">1. Clique em \'Abrir Configurações\'</string>
     <string name="permission_step_2">2. Toque em \'Permissões\'</string>
-    <string name="permission_step_3">3. Toque em \'Telefone\' ou \'Registro de chamadas\'</string>
+    <string name="permission_step_3">3. Toque em %1$s</string>
     <string name="permission_step_4">4. Selecione \'Permitir\'</string>
     <string name="action_open_settings">Abrir Configurações</string>
+    <string name="permission_label_phone">de telefone</string>
+    <string name="permission_step_label_phone">\'Telefone\' ou \'Registro de chamadas\'</string>
+    <string name="permission_label_notification">de notificação</string>
+    <string name="permission_step_label_notification">\'Notificação\'</string>
+    <string name="permission_label_sms">SMS</string>
+    <string name="permission_step_label_sms">\'SMS\'</string>
 
     <string name="content_desc_rotate_image">Girar imagem</string>
     <string name="content_desc_image">Imagem</string>
@@ -460,4 +467,12 @@
     <string name="swipe_action_none">Nenhuma</string>
     <string name="swipe_action_delete">Excluir</string>
     <string name="choose_swipe_action_title">Escolher ação</string>
+    <string name="ad_is_loading">Carregando anúncio…</string>
+    <string name="offline_dialog_title">Sem Conexão com a Internet</string>
+    <string name="offline_dialog_desc">Você está offline no momento. Enviar e receber mensagens ainda funciona normalmente — isso afeta apenas recursos que precisam de internet.</string>
+    <string name="offline_dialog_button">Abrir Configurações de Wi-Fi</string>
+    <string name="update_title">Atualização Disponível</string>
+    <string name="update_desc">Uma nova versão do aplicativo está disponível com as últimas correções e melhorias. Atualize agora para a melhor experiência.</string>
+    <string name="update_button">Atualizar Agora</string>
+    <string name="update_later">Mais tarde</string>
 </resources>

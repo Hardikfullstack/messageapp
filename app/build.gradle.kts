@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.messages"
+    namespace = "com.messages.sms.texting.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.messages"
+        applicationId = "com.messages.sms.texting.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

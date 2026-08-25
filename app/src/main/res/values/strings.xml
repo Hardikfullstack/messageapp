@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">Messages</string>
+    <string name="app_name">Messages: SMS &amp; Texting</string>
     <!-- Manifest launcher label only — the "#" prefix makes the app sort to the top of Android's
          alphabetical app lists (e.g. "Display over other apps" settings). Deliberately kept
          separate from app_name so it doesn't leak into in-app UI (About screen, emails, etc). -->
-    <string name="app_launcher_name">#Messages</string>
+    <string name="app_launcher_name">#Messages: SMS &amp; Texting</string>
 
     <!-- Home screen -->
     <string name="filter_inbox">Inbox</string>
@@ -345,7 +345,6 @@
     <string name="after_call_duration_outgoing">%1$s outgoing call</string>
     <string name="after_call_duration_incoming">%1$s incoming call</string>
     <string name="after_call_just_now_template">Just Now (%1$s)</string>
-    <string name="menu_test_after_call">Test After Call</string>
     <string name="after_call_quick_reply_1">Sorry, I can\'t talk right now</string>
     <string name="after_call_quick_reply_2">Can I call you later?</string>
     <string name="after_call_quick_reply_3">I\'m on my way</string>
@@ -361,6 +360,7 @@
     <string name="after_call_reminder_set_template">Reminder set for %1$s</string>
     <string name="after_call_cancel_reminder">Cancel Reminder</string>
     <string name="after_call_reminder_notification_title_template">Call back %1$s</string>
+    <string name="after_call_fallback_notification_title">Call Information</string>
     <string name="after_call_remind_me_about">Remind me about</string>
     <string name="content_desc_edit">Edit</string>
     <string name="after_call_action_add_contact">Add Contact</string>
@@ -414,12 +414,18 @@
     <string name="privacy_agree_prefix">By continuing, you agree to our </string>
     <string name="privacy_policy_link_text">Privacy Policy.</string>
     <string name="permission_needed_title">Permission Needed</string>
-    <string name="permission_needed_desc">This app requires Phone permissions to function properly. Since it was denied, please enable it manually:</string>
+    <string name="permission_needed_desc">This app requires %1$s permissions to function properly. Since it was denied, please enable it manually:</string>
     <string name="permission_step_1">1. Click \'Open Settings\'</string>
     <string name="permission_step_2">2. Tap on \'Permissions\'</string>
-    <string name="permission_step_3">3. Tap on \'Phone\' or \'Call logs\'</string>
+    <string name="permission_step_3">3. Tap on %1$s</string>
     <string name="permission_step_4">4. Select \'Allow\'</string>
     <string name="action_open_settings">Open Settings</string>
+    <string name="permission_label_phone">Phone</string>
+    <string name="permission_step_label_phone">\'Phone\' or \'Call logs\'</string>
+    <string name="permission_label_notification">Notification</string>
+    <string name="permission_step_label_notification">\'Notification\'</string>
+    <string name="permission_label_sms">SMS</string>
+    <string name="permission_step_label_sms">\'SMS\'</string>
 
     <!-- Image viewer screen -->
     <string name="content_desc_rotate_image">Rotate image</string>

@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Messages</string>
-    <string name="app_launcher_name">#Messages</string>
+    <string name="app_name">Messages: SMS &amp; Texting</string>
+    <string name="app_launcher_name">#Messages: SMS &amp; Texting</string>
 
     <string name="filter_inbox">Posteingang</string>
     <string name="filter_known">Bekannt</string>
@@ -335,6 +335,7 @@
     <string name="after_call_reminder_set_template">Erinnerung festgelegt für %1$s</string>
     <string name="after_call_cancel_reminder">Erinnerung abbrechen</string>
     <string name="after_call_reminder_notification_title_template">Zurückrufen %1$s</string>
+    <string name="after_call_fallback_notification_title">Anrufinformationen</string>
     <string name="after_call_remind_me_about">Erinnere mich an</string>
     <string name="content_desc_edit">Bearbeiten</string>
     <string name="after_call_action_add_contact">Kontakt hinzufügen</string>
@@ -381,12 +382,18 @@
     <string name="privacy_agree_prefix">Indem du fortfährst, stimmst du unserer </string>
     <string name="privacy_policy_link_text">Datenschutzrichtlinie zu.</string>
     <string name="permission_needed_title">Berechtigung erforderlich</string>
-    <string name="permission_needed_desc">Diese App benötigt Telefonberechtigungen, um ordnungsgemäß zu funktionieren. Da sie verweigert wurde, aktiviere sie bitte manuell:</string>
+    <string name="permission_needed_desc">Diese App benötigt %1$s-Berechtigungen, um ordnungsgemäß zu funktionieren. Da sie verweigert wurde, aktiviere sie bitte manuell:</string>
     <string name="permission_step_1">1. Auf \'Einstellungen öffnen\' klicken</string>
     <string name="permission_step_2">2. Auf \'Berechtigungen\' tippen</string>
-    <string name="permission_step_3">3. Auf \'Telefon\' oder \'Anrufliste\' tippen</string>
+    <string name="permission_step_3">3. Auf %1$s tippen</string>
     <string name="permission_step_4">4. \'Zulassen\' auswählen</string>
     <string name="action_open_settings">Einstellungen öffnen</string>
+    <string name="permission_label_phone">Telefon</string>
+    <string name="permission_step_label_phone">\'Telefon\' oder \'Anrufliste\'</string>
+    <string name="permission_label_notification">Benachrichtigungs</string>
+    <string name="permission_step_label_notification">\'Benachrichtigungen\'</string>
+    <string name="permission_label_sms">SMS</string>
+    <string name="permission_step_label_sms">\'SMS\'</string>
 
     <string name="content_desc_rotate_image">Bild drehen</string>
     <string name="content_desc_image">Bild</string>
@@ -460,4 +467,12 @@
     <string name="swipe_action_none">Keine</string>
     <string name="swipe_action_delete">Löschen</string>
     <string name="choose_swipe_action_title">Aktion wählen</string>
+    <string name="ad_is_loading">Anzeige wird geladen…</string>
+    <string name="offline_dialog_title">Keine Internetverbindung</string>
+    <string name="offline_dialog_desc">Du bist gerade offline. Nachrichten senden und empfangen funktioniert weiterhin einwandfrei — nur Funktionen, die Internet benötigen, sind betroffen.</string>
+    <string name="offline_dialog_button">WLAN-Einstellungen öffnen</string>
+    <string name="update_title">Update verfügbar</string>
+    <string name="update_desc">Eine neue Version der App mit den neuesten Fixes und Verbesserungen ist verfügbar. Jetzt aktualisieren für das beste Erlebnis.</string>
+    <string name="update_button">Jetzt aktualisieren</string>
+    <string name="update_later">Später</string>
 </resources>

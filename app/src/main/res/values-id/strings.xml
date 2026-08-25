@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Messages</string>
-    <string name="app_launcher_name">#Messages</string>
+    <string name="app_name">Messages: SMS &amp; Texting</string>
+    <string name="app_launcher_name">#Messages: SMS &amp; Texting</string>
 
     <string name="filter_inbox">Kotak Masuk</string>
     <string name="filter_known">Dikenal</string>
@@ -335,6 +335,7 @@
     <string name="after_call_reminder_set_template">Pengingat diatur untuk %1$s</string>
     <string name="after_call_cancel_reminder">Batalkan Pengingat</string>
     <string name="after_call_reminder_notification_title_template">Telepon kembali %1$s</string>
+    <string name="after_call_fallback_notification_title">Informasi Panggilan</string>
     <string name="after_call_remind_me_about">Ingatkan saya tentang</string>
     <string name="content_desc_edit">Edit</string>
     <string name="after_call_action_add_contact">Tambah Kontak</string>
@@ -381,12 +382,18 @@
     <string name="privacy_agree_prefix">Dengan melanjutkan, Anda menyetujui </string>
     <string name="privacy_policy_link_text">Kebijakan Privasi kami.</string>
     <string name="permission_needed_title">Izin Diperlukan</string>
-    <string name="permission_needed_desc">Aplikasi ini memerlukan izin Telepon agar berfungsi dengan baik. Karena ditolak, harap aktifkan secara manual:</string>
+    <string name="permission_needed_desc">Aplikasi ini memerlukan izin %1$s agar berfungsi dengan baik. Karena ditolak, harap aktifkan secara manual:</string>
     <string name="permission_step_1">1. Klik \'Buka Pengaturan\'</string>
     <string name="permission_step_2">2. Ketuk \'Izin\'</string>
-    <string name="permission_step_3">3. Ketuk \'Telepon\' atau \'Log Panggilan\'</string>
+    <string name="permission_step_3">3. Ketuk %1$s</string>
     <string name="permission_step_4">4. Pilih \'Izinkan\'</string>
     <string name="action_open_settings">Buka Pengaturan</string>
+    <string name="permission_label_phone">Telepon</string>
+    <string name="permission_step_label_phone">\'Telepon\' atau \'Log Panggilan\'</string>
+    <string name="permission_label_notification">Notifikasi</string>
+    <string name="permission_step_label_notification">\'Notifikasi\'</string>
+    <string name="permission_label_sms">SMS</string>
+    <string name="permission_step_label_sms">\'SMS\'</string>
 
     <string name="content_desc_rotate_image">Putar gambar</string>
     <string name="content_desc_image">Gambar</string>
@@ -460,4 +467,12 @@
     <string name="swipe_action_none">Tidak Ada</string>
     <string name="swipe_action_delete">Hapus</string>
     <string name="choose_swipe_action_title">Pilih Tindakan</string>
+    <string name="ad_is_loading">Iklan sedang dimuat…</string>
+    <string name="offline_dialog_title">Tidak Ada Koneksi Internet</string>
+    <string name="offline_dialog_desc">Anda sedang offline saat ini. Mengirim dan menerima pesan tetap berfungsi normal — ini hanya memengaruhi hal-hal yang memerlukan internet.</string>
+    <string name="offline_dialog_button">Buka Pengaturan Wi-Fi</string>
+    <string name="update_title">Pembaruan Tersedia</string>
+    <string name="update_desc">Versi baru aplikasi tersedia dengan perbaikan dan peningkatan terbaru. Perbarui sekarang untuk pengalaman terbaik.</string>
+    <string name="update_button">Perbarui Sekarang</string>
+    <string name="update_later">Nanti</string>
 </resources>

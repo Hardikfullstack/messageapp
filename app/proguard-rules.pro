@@ -19,3 +19,24 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# kotlinx.serialization — without these, R8 can strip/rename the fields of the remote ad-config
+# response classes (AppResponse/AppResult) in a release build, silently breaking JSON parsing for
+# the ad/maintenance/update config the whole app depends on. Standard rules from kotlinx.serialization's own docs.
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+-keepclassmembers class kotlinx.serialization.json.** {
+    *** Companion;
+}
+-keepclasseswithmembers class kotlinx.serialization.json.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class com.messages.sms.texting.app.**$$serializer { *; }
+-keepclassmembers class com.messages.sms.texting.app.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.messages.sms.texting.app.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+# Extra insurance for the modern kotlinx.serialization IR codegen path, alongside the rules above.
+-keep,allowoptimization class * extends kotlinx.serialization.internal.GeneratedSerializer

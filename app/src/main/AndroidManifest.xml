@@ -56,10 +56,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Messages">
 
-        <!-- Google's official test AdMob App ID — swap for the real one once issued for this app. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-2874047397258653~1273454100" />
 
         <!-- Firebase Analytics and AdMob both declare this property with different values —
              keep AdMob's, since ad-services config is what we actually need here. -->
@@ -172,6 +171,13 @@
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </receiver>
+
+        <!-- Custom Provider for MMS Service to read/write PDU files -->
+        <provider
+            android:name=".mms.MmsFileProvider"
+            android:authorities="${applicationId}.mmsfileprovider"
+            android:exported="true"
+            android:grantUriPermissions="true" />
 
         <!-- FileProvider for handing the built MMS PDU file to the system's MmsService -->
         <provider
