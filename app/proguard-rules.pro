@@ -1,4 +1,4 @@
-# Add project specific ProGuard rules here.
+﻿# Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
 #
@@ -20,7 +20,7 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# kotlinx.serialization — without these, R8 can strip/rename the fields of the remote ad-config
+# kotlinx.serialization â€” without these, R8 can strip/rename the fields of the remote ad-config
 # response classes (AppResponse/AppResult) in a release build, silently breaking JSON parsing for
 # the ad/maintenance/update config the whole app depends on. Standard rules from kotlinx.serialization's own docs.
 -keepattributes *Annotation*, InnerClasses
@@ -31,11 +31,11 @@
 -keepclasseswithmembers class kotlinx.serialization.json.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
--keep,includedescriptorclasses class com.messages.sms.texting.app.**$$serializer { *; }
--keepclassmembers class com.messages.sms.texting.app.** {
+-keep,includedescriptorclasses class com.message.sms.texting.app.**$$serializer { *; }
+-keepclassmembers class com.message.sms.texting.app.** {
     *** Companion;
 }
--keepclasseswithmembers class com.messages.sms.texting.app.** {
+-keepclasseswithmembers class com.message.sms.texting.app.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 # Extra insurance for the modern kotlinx.serialization IR codegen path, alongside the rules above.

@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.messages.sms.texting.app"
+    namespace = "com.message.sms.texting.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.messages.sms.texting.app"
+        applicationId = "com.message.sms.texting.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
