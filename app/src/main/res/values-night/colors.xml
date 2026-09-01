@@ -11,4 +11,5 @@
     <color name="option_row_text">#FFFFFFFF</color>
     <color name="message_text">#FFFFFFFF</color>
     <color name="chat_icon_secondary">#FFFFFFFF</color>
+    <color name="feature_icon_tint">#FF4D8DFF</color>
 </resources>

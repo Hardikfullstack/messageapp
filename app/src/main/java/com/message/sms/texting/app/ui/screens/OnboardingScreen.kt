@@ -75,46 +75,70 @@ fun OnboardingScreen(
     var showSettingsDialog by remember { mutableStateOf(false) }
     var isWaitingForSettings by remember { mutableStateOf(false) }
 
-    // Checked in ask-order (notification, then phone/call-log) after both system prompts have
-    // run their course â€” the dialog shown is for whichever of them is still missing first.
-    fun evaluatePermissionsAndProceed() {
-        val hasNotif = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+    // First denial of a given permission just stops (back to step 0, main button) and waits for
+    // the user to tap it again -- no dialog yet, no auto-advance to the next permission. Only a
+    // second denial in a row for that same permission opens the "go to Settings" dialog.
+    var notificationDeniedOnce by remember { mutableStateOf(false) }
+    var phoneDeniedOnce by remember { mutableStateOf(false) }
+
+    // Used only to auto-skip the intro below if both permissions were already granted before
+    // this screen was even reached -- re-checked at every point permission state could change.
+    var isNotifGranted by remember { mutableStateOf(false) }
+    var isPhoneGranted by remember { mutableStateOf(false) }
+    fun refreshGrantedStatus() {
+        isNotifGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
-        val hasPhoneGroup = ContextCompat.checkSelfPermission(
+        isPhoneGranted = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.READ_PHONE_STATE
         ) == PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.CALL_PHONE
-            ) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_CALL_LOG
             ) == PackageManager.PERMISSION_GRANTED
-
-        if (!hasNotif) {
-            deniedPermissionIsNotification = true
-            showSettingsDialog = true
-        } else if (!hasPhoneGroup) {
-            deniedPermissionIsNotification = false
-            showSettingsDialog = true
-        } else {
-            showSettingsDialog = false
+    }
+    LaunchedEffect(Unit) {
+        refreshGrantedStatus()
+        // Both permissions were already granted before this screen was even reached (e.g. the
+        // user granted them via system Settings directly, without ever finishing this flow's own
+        // button-driven steps) -- skip straight past the intro instead of showing it again.
+        if (isNotifGranted && isPhoneGranted) {
             currentPermissionStep = 3
         }
     }
 
     val notificationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) {
-        // Always continue to the next step in the sequence regardless of the result â€” every
-        // permission gets asked one after another; only afterwards do we show a dialog for
-        // whichever one is still missing.
-        currentPermissionStep = 2
+    ) { granted ->
+        refreshGrantedStatus()
+        if (granted) {
+            currentPermissionStep = 2
+        } else if (!notificationDeniedOnce) {
+            notificationDeniedOnce = true
+            currentPermissionStep = 0
+        } else {
+            deniedPermissionIsNotification = true
+            showSettingsDialog = true
+        }
+    }
+
+    val phoneLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        refreshGrantedStatus()
+        val allGranted = result.values.all { it }
+        if (allGranted) {
+            currentPermissionStep = 3
+        } else if (!phoneDeniedOnce) {
+            phoneDeniedOnce = true
+            currentPermissionStep = 0
+        } else {
+            deniedPermissionIsNotification = false
+            showSettingsDialog = true
+        }
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -122,19 +146,41 @@ fun OnboardingScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME && isWaitingForSettings) {
                 isWaitingForSettings = false
-                evaluatePermissionsAndProceed()
+                refreshGrantedStatus()
+                if (deniedPermissionIsNotification) {
+                    val hasNotif = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+                    if (hasNotif) {
+                        showSettingsDialog = false
+                        currentPermissionStep = 2
+                    } else {
+                        showSettingsDialog = true
+                    }
+                } else {
+                    val hasPhoneGroup = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.READ_PHONE_STATE
+                    ) == PackageManager.PERMISSION_GRANTED &&
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.CALL_PHONE
+                        ) == PackageManager.PERMISSION_GRANTED
+                    if (hasPhoneGroup) {
+                        showSettingsDialog = false
+                        currentPermissionStep = 3
+                    } else {
+                        showSettingsDialog = true
+                    }
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
-    }
-
-    val phoneLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) {
-        evaluatePermissionsAndProceed()
     }
 
     if (showSettingsDialog) {
@@ -167,8 +213,7 @@ fun OnboardingScreen(
                 phoneLauncher.launch(
                     arrayOf(
                         Manifest.permission.READ_PHONE_STATE,
-                        Manifest.permission.CALL_PHONE,
-                        Manifest.permission.READ_CALL_LOG
+                        Manifest.permission.CALL_PHONE
                     )
                 )
             }
@@ -194,12 +239,8 @@ fun OnboardingScreen(
 
     val strWelcomeTo = stringResource(R.string.welcome_to)
     val strTextMessaging = stringResource(R.string.text_messaging)
-    val strFeatureSmsManagementTitle = stringResource(R.string.feature_sms_management_title)
-    val strFeatureSmsManagementDesc = stringResource(R.string.feature_sms_management_desc)
     val strFeatureSmartNotificationsTitle = stringResource(R.string.feature_smart_notifications_title)
     val strFeatureSmartNotificationsDesc = stringResource(R.string.feature_smart_notifications_desc)
-    val strFeatureMessageSchedulingTitle = stringResource(R.string.feature_message_scheduling_title)
-    val strFeatureMessageSchedulingDesc = stringResource(R.string.feature_message_scheduling_desc)
     val strFeatureAfterCallTitle = stringResource(R.string.feature_after_call_title)
     val strFeatureAfterCallDesc = stringResource(R.string.feature_after_call_desc)
     val strActionAgreeContinue = stringResource(R.string.action_agree_continue)
@@ -232,7 +273,7 @@ fun OnboardingScreen(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(height = 95.dp)
+                        .height(height = 120.dp)
                         .clickable(
                             interactionSource = interactionSource,
                             indication = null,
@@ -240,36 +281,35 @@ fun OnboardingScreen(
                         )
                 )
 
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
                     text = strWelcomeTo,
-                    fontSize = 24.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.SemiBold,
                     fontFamily = Inter,
                     lineHeight = 30.sp,
-                    color = colorResource(R.color.text_title)
+                    color = colorResource(R.color.text_title),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
                 )
 
                 Text(
                     text = strTextMessaging,
-                    fontSize = 24.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = Inter,
                     lineHeight = 30.sp,
-                    color = colorResource(R.color.primary)
+                    color = colorResource(R.color.primary),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
                 )
 
-                Spacer(modifier = Modifier.height(18.dp))
-
-                FeatureItem(
-                    iconRes = R.drawable.permission_ic_sms,
-                    title = strFeatureSmsManagementTitle,
-                    description = strFeatureSmsManagementDesc,
-                    onClick = { currentPermissionStep = 1 }
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
                 FeatureItem(
                     iconRes = R.drawable.permission_ic_notification,
@@ -278,16 +318,7 @@ fun OnboardingScreen(
                     onClick = { currentPermissionStep = 1 }
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                FeatureItem(
-                    iconRes = R.drawable.permission_ic_message,
-                    title = strFeatureMessageSchedulingTitle,
-                    description = strFeatureMessageSchedulingDesc,
-                    onClick = { currentPermissionStep = 1 }
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 FeatureItem(
                     iconRes = R.drawable.permission_ic_call,
@@ -387,39 +418,32 @@ fun FeatureItem(
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = null,
-            tint = colorResource(R.color.light_color_gray),
+            tint = colorResource(R.color.feature_icon_tint),
             modifier = Modifier
-                .size(24.dp)
-                .padding(top = 2.dp)
+                .size(26.dp)
+                .padding(top = 3.dp)
         )
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
                 fontFamily = Inter,
                 color = colorResource(R.color.text_title)
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = description,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 fontFamily = Inter,
+                fontWeight = FontWeight.Medium,
                 color = colorResource(R.color.text_des),
                 lineHeight = 20.sp
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun OnboardingScreenPreview() {
-    MessagesTheme {
-        OnboardingScreen(onContinueClicked = {})
     }
 }
 

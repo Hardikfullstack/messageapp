@@ -336,6 +336,8 @@
     <string name="after_call_cancel_reminder">Batalkan Pengingat</string>
     <string name="after_call_reminder_notification_title_template">Telepon kembali %1$s</string>
     <string name="after_call_fallback_notification_title">Informasi Panggilan</string>
+    <string name="after_call_disabled_title">⚠️ ID Penelepon Dinonaktifkan</string>
+    <string name="after_call_disabled_desc">Ketuk untuk memperbaiki dengan mengizinkan Messages ditampilkan di atas aplikasi lain</string>
     <string name="after_call_remind_me_about">Ingatkan saya tentang</string>
     <string name="content_desc_edit">Edit</string>
     <string name="after_call_action_add_contact">Tambah Kontak</string>
@@ -376,22 +378,22 @@
     <string name="feature_smart_notifications_desc">Dapatkan peringatan instan untuk pesan baru dan percakapan penting.</string>
     <string name="feature_message_scheduling_title">Penjadwalan Pesan</string>
     <string name="feature_message_scheduling_desc">Jadwalkan pesan untuk dikirim secara otomatis pada waktu yang Anda inginkan.</string>
-    <string name="feature_after_call_title">Setelah Panggilan</string>
-    <string name="feature_after_call_desc">Akses tindakan pesan cepat setelah setiap panggilan.</string>
+    <string name="feature_after_call_title">Panggilan Telepon</string>
+    <string name="feature_after_call_desc">Izinkan akses panggilan agar kami dapat menampilkan tindakan pesan tepat setelah panggilan Anda berakhir.</string>
     <string name="action_agree_continue">Setuju &amp; Lanjutkan</string>
     <string name="privacy_agree_prefix">Dengan melanjutkan, Anda menyetujui </string>
     <string name="privacy_policy_link_text">Kebijakan Privasi kami.</string>
     <string name="permission_needed_title">Izin Diperlukan</string>
     <string name="permission_needed_desc">Aplikasi ini memerlukan izin %1$s agar berfungsi dengan baik. Karena ditolak, harap aktifkan secara manual:</string>
-    <string name="permission_step_1">1. Klik \'Buka Pengaturan\'</string>
+    <string name="permission_step_1">1. Buka Pengaturan</string>
     <string name="permission_step_2">2. Ketuk \'Izin\'</string>
-    <string name="permission_step_3">3. Ketuk %1$s</string>
+    <string name="permission_step_3">3. Temukan %1$s</string>
     <string name="permission_step_4">4. Pilih \'Izinkan\'</string>
     <string name="action_open_settings">Buka Pengaturan</string>
     <string name="permission_label_phone">Telepon</string>
-    <string name="permission_step_label_phone">\'Telepon\' atau \'Log Panggilan\'</string>
+    <string name="permission_step_label_phone">Panggilan Telepon</string>
     <string name="permission_label_notification">Notifikasi</string>
-    <string name="permission_step_label_notification">\'Notifikasi\'</string>
+    <string name="permission_step_label_notification">Notifikasi</string>
     <string name="permission_label_sms">SMS</string>
     <string name="permission_step_label_sms">\'SMS\'</string>
 

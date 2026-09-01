@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.message.sms.texting.app.ui.screens.SplashScreen
@@ -78,7 +79,14 @@ fun AppNavigation(deepLinkRoute: String? = null, onDeepLinkConsumed: () -> Unit 
         }
         wasOnline = isOnline
     }
-    if (showOfflineDialog && !isMaintenanceOn) {
+    // Only shown once past setup (Splash/Language/Onboarding/Permissions/Default-SMS) -- those
+    // screens have their own flow to worry about, an offline interruption there would just be
+    // noise since none of them need connectivity to proceed.
+    val offlineDialogBackStackEntry by navController.currentBackStackEntryAsState()
+    val offlineDialogCurrentRoute = offlineDialogBackStackEntry?.destination?.route
+    val setupRoutesForOfflineDialog = listOf(Routes.Splash.route, Routes.ChooseLanguage.route, Routes.Onboarding.route, Routes.Permissions.route, Routes.DefaultSms.route)
+    val isOnMainScreen = offlineDialogCurrentRoute != null && offlineDialogCurrentRoute !in setupRoutesForOfflineDialog
+    if (showOfflineDialog && !isMaintenanceOn && isOnMainScreen) {
         OfflineDialog(onDismiss = { showOfflineDialog = false })
     }
 
@@ -214,7 +222,26 @@ fun AppNavigation(deepLinkRoute: String? = null, onDeepLinkConsumed: () -> Unit 
         composable(Routes.Permissions.route) {
             PermissionScreen(
                 onAllPermissionsGranted = {
-                    navController.navigate(Routes.DefaultSms.route) {
+                    // Not always a first-run flow -- a returning user can land back here if a
+                    // permission (e.g. Overlay) got revoked later and they came back to re-grant
+                    // it, in which case language was already chosen and default-SMS may already
+                    // be set too. Route onward the same way Splash does, instead of unconditionally
+                    // sending everyone through language selection again.
+                    val prefs = com.message.sms.texting.app.utils.AppPreferences(context)
+                    val isDefaultSms = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        val roleManager = context.getSystemService(android.content.Context.ROLE_SERVICE) as android.app.role.RoleManager
+                        roleManager.isRoleHeld(android.app.role.RoleManager.ROLE_SMS)
+                    } else {
+                        android.provider.Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
+                    }
+                    val nextRoute = if (!prefs.languageSelected) {
+                        Routes.ChooseLanguage.createRoute(firstRun = true)
+                    } else if (!isDefaultSms) {
+                        Routes.DefaultSms.route
+                    } else {
+                        Routes.Dashboard.route
+                    }
+                    navController.navigate(nextRoute) {
                         popUpTo(Routes.Permissions.route) { inclusive = true }
                     }
                 }
@@ -274,7 +301,7 @@ fun AppNavigation(deepLinkRoute: String? = null, onDeepLinkConsumed: () -> Unit 
                 navController = navController,
                 isFirstRun = isFirstRun,
                 onFirstRunDone = {
-                    navController.navigate(Routes.Onboarding.route) {
+                    navController.navigate(Routes.DefaultSms.route) {
                         popUpTo(Routes.ChooseLanguage.route) { inclusive = true }
                     }
                 }
@@ -299,7 +326,26 @@ fun AppNavigation(deepLinkRoute: String? = null, onDeepLinkConsumed: () -> Unit 
                 navArgument("groupId") { type = NavType.StringType; nullable = true; defaultValue = null }
             )
         ) { backStackEntry ->
-            BackHandler { navController.popBackStackWithAd() }
+            // Peeked (not consumed) here â€” if the user picks a contact instead of backing out,
+            // Routes.Chat's own eager-consume logic below needs to still see this value.
+            val afterCallReturnInfo = remember {
+                com.message.sms.texting.app.ui.theme.AfterCallReturnState.pending
+            }
+            if (afterCallReturnInfo != null) {
+                BackHandler {
+                    com.message.sms.texting.app.ui.theme.AfterCallReturnState.pending = null
+                    navController.popBackStackWithAd()
+                    com.message.sms.texting.app.utils.AfterCallOverlayManager.show(
+                        context = context,
+                        address = afterCallReturnInfo.address,
+                        callInfoLine1 = afterCallReturnInfo.callInfoLine1,
+                        callInfoLine2 = afterCallReturnInfo.callInfoLine2,
+                        initialDisplayName = afterCallReturnInfo.displayName
+                    )
+                }
+            } else {
+                BackHandler { navController.popBackStackWithAd() }
+            }
             val isScheduling = backStackEntry.arguments?.getBoolean("isScheduling") ?: false
             val forwardText = backStackEntry.arguments?.getString("forwardText")
             val groupId = backStackEntry.arguments?.getString("groupId")?.toLongOrNull()
@@ -341,6 +387,11 @@ fun AppNavigation(deepLinkRoute: String? = null, onDeepLinkConsumed: () -> Unit 
                             contactName = contactName,
                             forwardText = forwardText
                         )
+                    )
+                },
+                onOpenNewChat = { forwardText ->
+                    navController.navigate(
+                        Routes.NewChat.createRoute(forwardText = forwardText)
                     )
                 },
                 onFinish = { navController.popBackStackWithAd() }

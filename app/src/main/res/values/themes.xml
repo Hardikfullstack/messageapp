@@ -10,14 +10,14 @@
 
     <!-- Android 12+ always shows a system splash screen on cold start, before the first frame is
          drawn — with no explicit theme for it, the OS falls back to the launcher icon on a plain
-         background, which flashes visibly before SplashScreen.kt's own gradient+logo composable
-         takes over. windowSplashScreenAnimatedIcon is set to transparent (no separate small icon
-         drawn) and the background matches SplashScreen.kt's gradient top color, so that flash
+         background, which flashes visibly before SplashScreen.kt's own composable takes over.
+         windowSplashScreenAnimatedIcon is set to transparent (no separate small icon drawn) and
+         the background matches SplashScreen.kt's own background (bg_primary), so that flash
          either isn't visible at all or blends straight into the real splash. Applied only to
          MainActivity in the manifest — installSplashScreen() (called there) switches to
          postSplashScreenTheme once the first frame is ready. -->
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/primary</item>
+        <item name="windowSplashScreenBackground">@color/bg_primary</item>
         <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
         <item name="postSplashScreenTheme">@style/Theme.Messages</item>
     </style>

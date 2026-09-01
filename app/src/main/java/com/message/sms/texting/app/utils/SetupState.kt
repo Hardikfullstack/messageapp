@@ -24,27 +24,23 @@ object SetupState {
             Manifest.permission.READ_PHONE_STATE
         ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
             context,
-            Manifest.permission.READ_CALL_LOG
+            Manifest.permission.CALL_PHONE
         ) == PackageManager.PERMISSION_GRANTED
-
-        // Android 14+ no longer auto-grants USE_FULL_SCREEN_INTENT (only calling/alarm-style apps
-        // get it by default) â€” without it, showAfterCallFullScreenNotification's fallback silently
-        // degrades to a plain heads-up notification instead of auto-launching. Only required on
-        // OEMs where that fallback actually gets used (the primary direct-launch path can get
-        // blocked) â€” Samsung/MIUI/Pixel already work via the primary path, so this fallback-only
-        // permission is never needed there (same gate as battery optimization below).
-        val hasFullScreenIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && PowerUtils.shouldPromptForBatteryOptimization()) {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-            notificationManager.canUseFullScreenIntent()
-        } else {
-            true
-        }
 
         val prefs = AppPreferences(context)
         val isFullyOnboarded = prefs.onboardingCompleted && hasNotif && hasPhone
-        val isPermissionsDone = isFullyOnboarded && Settings.canDrawOverlays(context) && hasFullScreenIntent &&
-                (!MiuiUtils.isMiui() || (prefs.miuiPermissionsCompleted && prefs.miuiAutostartCompleted)) &&
-                (!OnePlusUtils.isOnePlus() || prefs.onePlusAutostartCompleted)
+        // Language selection now happens after Onboarding/Permissions (right before default-SMS),
+        // so it needs to be included here too or this could return true while still on that screen.
+        // USE_FULL_SCREEN_INTENT no longer requested -- AfterCallReceiver drives the
+        // AfterCallActivity launch itself (a delayed direct startActivity(), made reliable by its
+        // overlay-window trick), so it doesn't depend on that permission anymore. MIUI's "Display
+        // pop-up" step is also no longer requested (not needed for the same reason), but Autostart
+        // IS still requested on MIUI, so this has to wait on it too. OnePlus/Oppo/Realme Autostart
+        // is no longer requested at all (the overlay-window trick made it unnecessary there too),
+        // so there's no corresponding wait for it.
+        val isPermissionsDone = isFullyOnboarded && Settings.canDrawOverlays(context) &&
+                (!MiuiUtils.isMiui() || prefs.miuiAutostartCompleted) &&
+                prefs.languageSelected
 
         val isDefaultSms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = context.getSystemService(Context.ROLE_SERVICE) as android.app.role.RoleManager

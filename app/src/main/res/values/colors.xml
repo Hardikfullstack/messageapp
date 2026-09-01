@@ -18,4 +18,5 @@
     <color name="message_text">#FF464555</color>
     <color name="chat_icon_secondary">#FF464555</color>
     <color name="call_green">#FF2DBA68</color>
+    <color name="feature_icon_tint">#FF105FE9</color>
 </resources>

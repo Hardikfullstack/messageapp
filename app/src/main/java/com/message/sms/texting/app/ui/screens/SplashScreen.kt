@@ -3,63 +3,28 @@
 import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.StartOffset
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.tween
-import androidx.compose.ui.draw.scale
-import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.message.sms.texting.app.ui.theme.Inter
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
-import kotlin.random.Random
 
 import android.os.Build
 import android.Manifest
@@ -83,21 +48,12 @@ import com.message.sms.texting.app.ads.NativeAdCache
 import com.message.sms.texting.app.ads.waitUntilAdReady
 import com.message.sms.texting.app.viewmodel.AppConfigViewModel
 
-private val SplashLogoWidth = 190.dp
-private val SplashLogoHeight = 162.dp
-private val SplashDotsOffsetX = 49.dp
-private val SplashDotsOffsetY = 58.dp
-private val SplashDotSize = 14.dp
-private val SplashDotSpacing = 10.dp
-private val SplashGradientTop = Color(0xFF105FE9)
-private val SplashGradientBottom = Color(0xFF0E60CA)
+private val SplashLogoBoxSize = 120.dp
+private val SplashLogoBoxRadius = 20.dp
 
 @Composable
 fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
     val view = LocalView.current
-    var displayedText by remember { mutableStateOf("") }
-    var showCursor by remember { mutableStateOf(true) }
-    var isTyping by remember { mutableStateOf(false) }
     var showAdLoader by remember { mutableStateOf(false) }
 
     // Shares the same AppConfigViewModel instance created in MainActivity (Activity-scoped).
@@ -106,15 +62,8 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
 
     val canRequestAds by com.message.sms.texting.app.ads.UmpConsentManager.canRequestAds.collectAsState()
 
-    // Uses the remote config's app_name when a response is available (live fetch or last-cached,
-    // per AppConfigViewModel) â€” falls back to the hardcoded, translated string resource if the
-    // API hasn't returned anything yet (fresh install, offline, or no prior successful fetch).
-    // Line-broken after "Messages:" so the name renders on two lines instead of one long line.
-    val fullText = (adConfig?.result?.app_name?.takeIf { it.isNotBlank() }
-        ?: stringResource(R.string.app_name)).replaceFirst(": ", ":\n")
-
-    // Preload as soon as config is available â€” runs in parallel with the splash animation below,
-    // so the ad (if this open's cadence calls for one) is ready by the time we're done typing.
+    // Preload as soon as config is available â€” runs in parallel with the splash below, so the ad
+    // (if this open's cadence calls for one) is ready by the time the splash pause is done.
     LaunchedEffect(adConfig, canRequestAds) {
         if (!canRequestAds) return@LaunchedEffect
         val result = adConfig?.result ?: return@LaunchedEffect
@@ -149,17 +98,6 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
         }
     }
 
-    LaunchedEffect(isTyping) {
-        if (isTyping) {
-            showCursor = true
-        } else {
-            while (true) {
-                delay(500)
-                showCursor = !showCursor
-            }
-        }
-    }
-
     LaunchedEffect(Unit) {
         val window = (view.context as? Activity)?.window
         if (window != null) {
@@ -179,13 +117,19 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
             Manifest.permission.READ_PHONE_STATE
         ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
             view.context,
-            Manifest.permission.READ_CALL_LOG
+            Manifest.permission.CALL_PHONE
         ) == PackageManager.PERMISSION_GRANTED
 
         val prefs = AppPreferences(view.context)
         val isFullyOnboarded = prefs.onboardingCompleted && hasNotif && hasPhone
+        // MIUI's "Display pop-up" step isn't requested anymore, but Autostart IS still requested
+        // on MIUI (see PermissionScreen.kt's computeNextStep), so this must wait on it too, or
+        // closing the app before completing that step lets it get skipped entirely on the next
+        // open (this exact bug was reported and is what this fixes). OnePlus/Oppo/Realme Autostart
+        // is no longer requested at all (the overlay-window trick makes it unnecessary), so no
+        // corresponding wait for it here.
         val isPermissionsDone = isFullyOnboarded && Settings.canDrawOverlays(view.context) &&
-                (!MiuiUtils.isMiui() || (prefs.miuiPermissionsCompleted && prefs.miuiAutostartCompleted))
+                (!MiuiUtils.isMiui() || prefs.miuiAutostartCompleted)
 
         val isDefaultSms =
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -197,26 +141,17 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
             }
 
         // Skipped for deep-link launches (e.g. tapping a message in the After Call overlay) â€”
-        // the branding animation only makes sense for a normal cold app open.
+        // the brief branding pause only makes sense for a normal cold app open.
         if (!skipAnimation) {
-            delay(300)
-
-            isTyping = true
-            fullText.forEachIndexed { index, char ->
-                displayedText += char
-                delay(Random.nextLong(80, 130))
-            }
-            isTyping = false
-
-            delay(800)
+            delay(1100)
         }
 
         val nextRoute =
-            if (!prefs.languageSelected) Routes.ChooseLanguage.createRoute(firstRun = true)
-            else if (isPermissionsDone && isDefaultSms) Routes.Dashboard.route
-            else if (isPermissionsDone) Routes.DefaultSms.route
-            else if (isFullyOnboarded) Routes.Permissions.route
-            else Routes.Onboarding.route
+            if (!isFullyOnboarded) Routes.Onboarding.route
+            else if (!isPermissionsDone) Routes.Permissions.route
+            else if (!prefs.languageSelected) Routes.ChooseLanguage.createRoute(firstRun = true)
+            else if (!isDefaultSms) Routes.DefaultSms.route
+            else Routes.Dashboard.route
 
         // The cold-start App Open/Interstitial cadence only applies once setup is fully done â€”
         // showing an ad mid-onboarding would be jarring, and those screens have their own ads.
@@ -273,119 +208,26 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(SplashGradientTop, SplashGradientBottom))),
+            .background(colorResource(R.color.bg_primary)),
         contentAlignment = Alignment.Center
     ) {
         if (showAdLoader) {
             AdLoadingScreen(modifier = Modifier.fillMaxSize())
         } else {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                SplashLogo()
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = buildAnnotatedString {
-                        // "Messages:" (before the line break) stays at the default large size â€”
-                        // only the line after it (the tagline) renders smaller.
-                        val newlineIndex = displayedText.indexOf('\n')
-                        val onSecondLine = newlineIndex >= 0
-                        val firstPart = if (onSecondLine) displayedText.substring(0, newlineIndex + 1) else displayedText
-                        val secondPart = if (onSecondLine) displayedText.substring(newlineIndex + 1) else ""
-
-                        append(firstPart)
-                        withStyle(SpanStyle(fontSize = 24.sp, fontWeight = FontWeight.Normal)) {
-                            append(secondPart)
-                        }
-                        withStyle(
-                            SpanStyle(
-                                color = Color.White.copy(alpha = if (showCursor) 1f else 0f),
-                                fontWeight = FontWeight.Light,
-                                fontSize = if (onSecondLine) 24.sp else 32.sp
-                            )
-                        ) {
-                            append("|")
-                        }
-                    },
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    lineHeight = 42.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = Inter,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                )
-            }
+            SplashLogo()
         }
     }
 }
 
-/** App's message-bubble logo with an animated "typing" three-dot indicator over the bubble. */
+/** App's message-bubble logo, plain -- no background box behind it, just a rounded clip on the
+ * image itself. */
 @Composable
 private fun SplashLogo() {
-    // Entrance: logo isn't there at all at first (scale 0 / invisible), then pops in with a
-    // bouncy zoom-in â€” only once that settles does the typing-dot loop start.
-    val scale = remember { Animatable(0f) }
-    val alpha = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        delay(150)
-        launch { alpha.animateTo(1f, animationSpec = tween(durationMillis = 400)) }
-        scale.animateTo(
-            1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessVeryLow
-            )
-        )
-    }
-    Box(
+    Image(
+        painter = painterResource(R.drawable.logo),
+        contentDescription = null,
         modifier = Modifier
-            .width(SplashLogoWidth)
-            .height(SplashLogoHeight)
-            .scale(scale.value)
-            .alpha(alpha.value)
-    ) {
-        Image(
-            painter = painterResource(R.drawable.logo_message),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize()
-        )
-        TypingDots(
-            modifier = Modifier.offset(x = SplashDotsOffsetX, y = SplashDotsOffsetY),
-            dotColor = SplashGradientTop,
-            dotSize = SplashDotSize,
-            spacing = SplashDotSpacing
-        )
-    }
-}
-
-/** Three dots that bounce in a left-to-right wave, like a chat app's "typingâ€¦" indicator. */
-@Composable
-private fun TypingDots(modifier: Modifier = Modifier, dotColor: Color, dotSize: Dp, spacing: Dp) {
-    val transition = rememberInfiniteTransition(label = "typingDots")
-    val bouncePx = with(LocalDensity.current) { 6.dp.toPx() }
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(spacing)) {
-        repeat(3) { index ->
-            val offsetY by transition.animateFloat(
-                initialValue = 0f,
-                targetValue = 0f,
-                animationSpec = infiniteRepeatable(
-                    animation = keyframes {
-                        durationMillis = 900
-                        0f at 0
-                        -bouncePx at 200
-                        0f at 400
-                    },
-                    initialStartOffset = StartOffset(index * 150)
-                ),
-                label = "dot$index"
-            )
-            Box(
-                modifier = Modifier
-                    .size(dotSize)
-                    .offset { IntOffset(0, offsetY.roundToInt()) }
-                    .background(dotColor, CircleShape)
-            )
-        }
-    }
+            .size(SplashLogoBoxSize)
+            .clip(RoundedCornerShape(SplashLogoBoxRadius))
+    )
 }

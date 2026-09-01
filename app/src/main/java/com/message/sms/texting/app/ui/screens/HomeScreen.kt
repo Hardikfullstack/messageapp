@@ -52,7 +52,6 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import com.message.sms.texting.app.viewmodel.HomeViewModel
 import com.message.sms.texting.app.model.SmsMessage
-import com.message.sms.texting.app.ui.components.CustomIconButton
 import com.message.sms.texting.app.ui.components.ContextualTopBar
 import com.message.sms.texting.app.ui.components.CommonTopBar
 import com.message.sms.texting.app.ui.components.MessageSkeletonUi
@@ -60,7 +59,6 @@ import com.message.sms.texting.app.ui.components.ScrollToTopButton
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.message.sms.texting.app.ui.components.dialogs.ConfirmationDialog
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.style.TextAlign
 import com.message.sms.texting.app.navigation.Routes
 import android.app.Activity

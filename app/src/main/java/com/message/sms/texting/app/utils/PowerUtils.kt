@@ -22,11 +22,12 @@ object PowerUtils {
     }
 
     /** Only worth asking on OEMs that (a) don't already have their own dedicated permission
-     * covering the same need â€” MIUI's Autostart step already does â€” and (b) are known to actually
-     * need it â€” Samsung/stock-Android-family devices reliably run background receivers/overlays
-     * without it, so asking there is pure friction with no benefit. */
+     * covering the same need â€” MIUI's Autostart step already does, and so does OnePlus/Oppo's â€”
+     * and (b) are known to actually need it â€” Samsung/stock-Android-family devices reliably run
+     * background receivers/overlays without it, so asking there is pure friction with no benefit. */
     fun shouldPromptForBatteryOptimization(): Boolean {
         if (MiuiUtils.isMiui()) return false
+        if (OnePlusUtils.isOnePlus()) return false
         val manufacturer = Build.MANUFACTURER.lowercase(Locale.ROOT)
         val brand = Build.BRAND.lowercase(Locale.ROOT)
         val skipBrands = listOf("samsung", "google")

@@ -1,6 +1,8 @@
 ﻿package com.message.sms.texting.app.ui.screens
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -14,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.message.sms.texting.app.MainActivity
 import com.message.sms.texting.app.ui.theme.AfterCallReturnState
+import com.message.sms.texting.app.ui.theme.FontSizeState
 import com.message.sms.texting.app.ui.theme.MessagesTheme
 
 // AppCompatActivity (not plain ComponentActivity) â€” needed so the app's Light/Dark/System theme
@@ -21,6 +24,18 @@ import com.message.sms.texting.app.ui.theme.MessagesTheme
 // gets picked up by this Activity's Configuration; a bare ComponentActivity ignores it and falls
 // back to the raw system dark-mode setting instead.
 class AfterCallActivity : AppCompatActivity() {
+    // Matches MainActivity's own override -- without this, screens shared between the two (e.g.
+    // MessageItemUi, reused in the Message tab here) render at a different font scale than they
+    // do under MainActivity, throwing off pixel-level tweaks (like the unread-count badge's
+    // manual vertical offset) that were tuned against MainActivity's scale.
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = newBase.getSharedPreferences("messages_prefs", Context.MODE_PRIVATE)
+        val fontSizeMode = prefs.getString("app_font_size_mode", "normal") ?: "normal"
+        val config = Configuration(newBase.resources.configuration)
+        config.fontScale = FontSizeState.scaleFor(fontSizeMode)
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
+
     companion object {
         /**
          * Set right before AfterCallMoreTab's Send Mail/Calendar/Web actions launch an external
@@ -74,6 +89,28 @@ class AfterCallActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        if (intent.getBooleanExtra("is_call_trampoline", false)) {
+            val notifId = intent.getIntExtra("notif_id", -1)
+            if (notifId != -1) {
+                androidx.core.app.NotificationManagerCompat.from(this).cancel(notifId)
+            }
+            val callIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra("call_intent", Intent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<Intent>("call_intent")
+            }
+            if (callIntent != null) {
+                try {
+                    startActivity(callIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            finish()
+            return
+        }
 
         // Ensure this activity can show over the lock screen and turns the screen on
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -119,6 +156,22 @@ class AfterCallActivity : AppCompatActivity() {
                             putExtra("threadId", threadId)
                             putExtra("address", chatAddress)
                             putExtra("contactName", name)
+                            if (forwardText != null) putExtra("forwardText", forwardText)
+                        }
+                        startActivity(intent)
+                    },
+                    onOpenNewChat = { forwardText ->
+                        finish()
+                        AfterCallReturnState.pending = AfterCallReturnState.Info(
+                            address = address,
+                            displayName = contactName,
+                            isKnownContact = contactName != null,
+                            callInfoLine1 = callInfoLine1,
+                            callInfoLine2 = callInfoLine2
+                        )
+                        val intent = Intent(this, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            putExtra("navigate_to_new_chat", true)
                             if (forwardText != null) putExtra("forwardText", forwardText)
                         }
                         startActivity(intent)

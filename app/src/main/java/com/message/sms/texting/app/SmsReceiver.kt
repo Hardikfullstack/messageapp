@@ -49,7 +49,24 @@ class SmsReceiver : BroadcastReceiver() {
                                     put(Telephony.Sms.READ, if (isCurrentlyActive) 1 else 0)
                                     put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX)
                                 }
-                                context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
+                                val insertedUri = context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
+
+                                // The provider decides the row's real thread_id on insert (its own
+                                // address-canonicalization can differ from getOrCreateThreadId()
+                                // above — forcing our own value here previously caused the same
+                                // contact to split into two separate conversations). Read back
+                                // whatever the provider actually assigned so notification and sync
+                                // both act on the row that truly exists, falling back to the
+                                // precomputed threadId only if the row can't be read back.
+                                val actualThreadId = insertedUri?.let { uri ->
+                                    context.contentResolver.query(
+                                        uri,
+                                        arrayOf(Telephony.Sms.THREAD_ID),
+                                        null, null, null
+                                    )?.use { cursor ->
+                                        if (cursor.moveToFirst()) cursor.getLong(0) else null
+                                    }
+                                } ?: threadId
 
                                 // Only show notification if NOT blocked
                                 if (!isBlocked) {
@@ -64,14 +81,14 @@ class SmsReceiver : BroadcastReceiver() {
 
                                     NotificationHelper.showSmsNotification(
                                         context = context,
-                                        threadId = threadId,
+                                        threadId = actualThreadId,
                                         address = address,
                                         body = body,
                                         contactName = contactName
                                     )
                                 }
 
-                                repository.syncThreadMessages(threadId)
+                                repository.syncThreadMessages(actualThreadId)
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             } finally {

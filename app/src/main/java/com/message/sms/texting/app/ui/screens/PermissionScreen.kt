@@ -65,14 +65,24 @@ fun PermissionScreen(
     // after each step returns â€” keeps the sequence in one place instead of duplicated logic.
     fun computeNextStep(): PermissionStep {
         return if (!Settings.canDrawOverlays(context)) PermissionStep.OVERLAY
-        // Only relevant as a backstop for OEMs where the direct screen launch can get blocked
-        // (OnePlus/Oppo etc.) â€” Samsung/MIUI/Pixel already work via the primary path, so this
-        // fallback-only permission is never actually needed there.
-        else if (PowerUtils.shouldPromptForBatteryOptimization() && !hasFullScreenIntentPermission(context)) PermissionStep.FULL_SCREEN_INTENT
-        else if (PowerUtils.shouldPromptForBatteryOptimization() && !PowerUtils.isIgnoringBatteryOptimizations(context) && !prefs.batteryOptimizationCompleted) PermissionStep.BATTERY_OPTIMIZATION
-        else if (MiuiUtils.isMiui() && !MiuiUtils.isMiuiBackgroundPopupGranted(context) && !prefs.miuiPermissionsCompleted) PermissionStep.MIUI_PERMISSIONS
+        // No longer requested -- AfterCallReceiver doesn't depend on the notification's
+        // full-screen-intent auto-launch anymore (it drives startActivity() itself, directly),
+        // so USE_FULL_SCREEN_INTENT isn't needed for After Call to work.
+        // else if (PowerUtils.shouldPromptForBatteryOptimization() && !hasFullScreenIntentPermission(context)) PermissionStep.FULL_SCREEN_INTENT
+        // Dropped -- the decompiled competing app doesn't request REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+        // at all (confirmed via its manifest), and the overlay-window trick already covers the
+        // same reliable-background-launch need this was meant to address.
+        // else if (PowerUtils.shouldPromptForBatteryOptimization() && !PowerUtils.isIgnoringBatteryOptimizations(context) && !prefs.batteryOptimizationCompleted) PermissionStep.BATTERY_OPTIMIZATION
+        // MIUI's "Display pop-up while running in background" dropped -- not needed now that
+        // AfterCallReceiver's overlay-window trick keeps the process "visible" on its own.
+        // Autostart kept -- still asked for on MIUI, since it may still matter for reliability
+        // beyond what the overlay trick covers (broadcast delivery itself, not just the launch).
+        // else if (MiuiUtils.isMiui() && !MiuiUtils.isMiuiBackgroundPopupGranted(context) && !prefs.miuiPermissionsCompleted) PermissionStep.MIUI_PERMISSIONS
         else if (MiuiUtils.isMiui() && !MiuiUtils.isMiuiAutostartGranted(context) && !prefs.miuiAutostartCompleted) PermissionStep.MIUI_AUTOSTART
-        else if (OnePlusUtils.isOnePlus() && !prefs.onePlusAutostartCompleted) PermissionStep.ONEPLUS_AUTOSTART
+        // OnePlus/Oppo/Realme Autostart dropped -- the overlay-window trick already makes After
+        // Call reliable without it (confirmed by device testing), so asking for it is pure
+        // friction with no proven benefit, unlike MIUI's Autostart which is being kept for now.
+        // else if (OnePlusUtils.isOnePlus() && !prefs.onePlusAutostartCompleted) PermissionStep.ONEPLUS_AUTOSTART
         else PermissionStep.DONE
     }
 

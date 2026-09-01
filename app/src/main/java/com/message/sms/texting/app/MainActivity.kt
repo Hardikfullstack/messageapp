@@ -122,6 +122,9 @@ class MainActivity : AppCompatActivity() {
             val contactName = intent.getStringExtra("contactName")
             val forwardText = intent.getStringExtra("forwardText")
             deepLinkRoute = com.message.sms.texting.app.navigation.Routes.Chat.createRoute(threadId, address, contactName, forwardText = forwardText)
+        } else if (intent.getBooleanExtra("navigate_to_new_chat", false)) {
+            val forwardText = intent.getStringExtra("forwardText")
+            deepLinkRoute = com.message.sms.texting.app.navigation.Routes.NewChat.createRoute(forwardText = forwardText)
         }
     }
 }

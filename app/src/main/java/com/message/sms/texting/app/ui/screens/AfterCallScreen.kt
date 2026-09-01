@@ -79,6 +79,7 @@ fun AfterCallScreen(
     callInfoLine1: String,
     callInfoLine2: String,
     onOpenChat: (threadId: Long, address: String, contactName: String?, forwardText: String?) -> Unit,
+    onOpenNewChat: (forwardText: String?) -> Unit,
     onFinish: () -> Unit
 ) {
     val pagerState = rememberPagerState(initialPage = 0) { 4 }
@@ -86,6 +87,12 @@ fun AfterCallScreen(
     val context = LocalContext.current
 
     fun openChat() {
+        // No real number for a "Private Number" call -- let the user pick who to message instead
+        // of creating/opening a bogus thread for a blank address.
+        if (address.isBlank()) {
+            onOpenNewChat(null)
+            return
+        }
         val threadId = Telephony.Threads.getOrCreateThreadId(context, address)
         onOpenChat(threadId, address, if (isKnownContact) displayName else null, null)
     }
@@ -111,7 +118,16 @@ fun AfterCallScreen(
                     callInfoLine1 = callInfoLine1,
                     callInfoLine2 = callInfoLine2,
                     onMessageClick = { openChat() },
-                    onCallClick = { initiateCall(context, address) }
+                    onCallClick = {
+                        // No real number for a "Private Number" call (address is blank) -- dialing
+                        // it would be a no-op, so open the default Phone app itself instead, same
+                        // as the reference app does.
+                        if (address.isBlank()) {
+                            openDefaultDialerApp(context)
+                        } else {
+                            initiateCall(context, address)
+                        }
+                    }
                 )
                 AfterCallTabBar(
                     selectedTab = pagerState.currentPage,
@@ -144,7 +160,8 @@ fun AfterCallScreen(
                 1 -> AfterCallQuickReplyTab(
                     address = address,
                     displayName = displayName,
-                    onOpenChat = onOpenChat
+                    onOpenChat = onOpenChat,
+                    onOpenNewChat = onOpenNewChat
                 )
                 2 -> AfterCallReminderTab(address = address, displayName = displayName)
                 3 -> AfterCallMoreTab(
@@ -200,6 +217,22 @@ fun AfterCallOverlayRoot(
             }
             context.startActivity(intent)
         },
+        onOpenNewChat = { forwardText ->
+            onDismiss()
+            com.message.sms.texting.app.ui.theme.AfterCallReturnState.pending = com.message.sms.texting.app.ui.theme.AfterCallReturnState.Info(
+                address = address,
+                displayName = displayName,
+                isKnownContact = isKnownContact,
+                callInfoLine1 = callInfoLine1,
+                callInfoLine2 = callInfoLine2
+            )
+            val intent = Intent(context, com.message.sms.texting.app.MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("navigate_to_new_chat", true)
+                if (forwardText != null) putExtra("forwardText", forwardText)
+            }
+            context.startActivity(intent)
+        },
         onFinish = { onDismiss() }
     )
 }
@@ -237,9 +270,11 @@ private fun AfterCallMessageTab(
 private fun AfterCallQuickReplyTab(
     address: String,
     displayName: String?,
-    onOpenChat: (threadId: Long, address: String, contactName: String?, forwardText: String?) -> Unit
+    onOpenChat: (threadId: Long, address: String, contactName: String?, forwardText: String?) -> Unit,
+    onOpenNewChat: (forwardText: String?) -> Unit
 ) {
     val context = LocalContext.current
+    val viewModel: HomeViewModel = viewModel()
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     var personalText by remember { mutableStateOf("") }
 
@@ -251,8 +286,12 @@ private fun AfterCallQuickReplyTab(
     val strWritePersonal = stringResource(R.string.after_call_write_personal)
 
     fun openChatWith(text: String) {
-        val threadId = Telephony.Threads.getOrCreateThreadId(context, address)
-        onOpenChat(threadId, address, displayName, text)
+        if (address.isNotBlank()) {
+            val threadId = android.provider.Telephony.Threads.getOrCreateThreadId(context, address)
+            onOpenChat(threadId, address, displayName, text)
+        } else {
+            onOpenNewChat(text)
+        }
     }
 
     Column(
@@ -890,6 +929,41 @@ private fun AfterCallMoreTab(
                 }
             }
         )
+    }
+}
+
+/** Opens the device's default Phone app's call log/recents screen -- used for a "Private Number"
+ * call where there's no real number to dial back. ACTION_VIEW on the call log content URI is what
+ * most dialer apps register to land specifically on their recents tab, rather than whatever tab
+ * they happen to remember last (getLaunchIntentForPackage's plain "open the app" can land on
+ * Contacts instead, depending on the dialer app). Falls back to just launching the dialer package
+ * directly, then to a plain ACTION_DIAL with no number, if that fails. */
+private fun openDefaultDialerApp(context: Context) {
+    try {
+        val callLogIntent = Intent(Intent.ACTION_VIEW, android.provider.CallLog.Calls.CONTENT_URI).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(callLogIntent)
+        return
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? android.telecom.TelecomManager
+    val defaultDialerPackage = telecomManager?.defaultDialerPackage
+    try {
+        val launchIntent = defaultDialerPackage?.let { context.packageManager.getLaunchIntentForPackage(it) }
+        if (launchIntent != null) {
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(launchIntent)
+            return
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    try {
+        context.startActivity(Intent(Intent.ACTION_DIAL).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK })
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
 }
 

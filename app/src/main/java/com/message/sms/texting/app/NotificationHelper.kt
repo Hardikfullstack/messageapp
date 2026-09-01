@@ -89,15 +89,12 @@ object NotificationHelper {
     }
 
     /**
-     * Fallback delivery path for the After Call screen, used when a direct startActivity() from
-     * AfterCallReceiver doesn't result in the screen actually appearing (see the delayed check in
-     * AfterCallReceiver) â€” some OEMs (OnePlus/OxygenOS in particular) silently swallow a plain
-     * background startActivity() call despite the app holding SYSTEM_ALERT_WINDOW. A full-screen
-     * intent notification goes through the NotificationManager instead, which is the one
-     * Android-blessed path for background-triggered full-screen UI (the same mechanism incoming
-     * calls/alarms use) and is far less likely to be silently blocked. If the device is locked,
-     * the system launches [contentIntent] automatically; otherwise this shows as a tappable
-     * heads-up notification instead â€” a working fallback either way, instead of nothing at all.
+     * Immediate, always-safe visual feedback right when a call ends -- posting a notification is
+     * never subject to background-launch restrictions. Not a full-screen-intent notification
+     * anymore: AfterCallReceiver drives the actual AfterCallActivity launch itself (a delayed
+     * direct startActivity(), made reliable by its overlay-window trick -- see AfterCallReceiver's
+     * comment), so this doesn't need to auto-launch anything on its own, and USE_FULL_SCREEN_INTENT
+     * isn't needed. [contentIntent] still opens the screen if the user taps the notification.
      */
     fun showAfterCallFullScreenNotification(
         context: Context,
@@ -118,7 +115,6 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setContentIntent(pendingIntent)
-            .setFullScreenIntent(pendingIntent, true)
             .setAutoCancel(true)
             .setOngoing(false)
 
@@ -132,6 +128,41 @@ object NotificationHelper {
 
     fun cancelAfterCallFullScreenNotification(context: Context) {
         NotificationManagerCompat.from(context).cancel(AFTER_CALL_NOTIFICATION_ID)
+    }
+
+    /** After Call genuinely can't work without SYSTEM_ALERT_WINDOW (AfterCallReceiver bails out
+     * entirely without it) -- rather than silently doing nothing when it's missing (e.g. the user
+     * revoked it after onboarding), nudge them to go re-grant it. Tapping opens this app itself
+     * (matches the decompiled competing app's own fallback -- it opens its own launcher intent
+     * too, not the raw system settings screen directly). */
+    fun showOverlayPermissionMissingNotification(context: Context) {
+        ensureAfterCallChannelExists(context)
+
+        val appIntent = Intent(context, com.message.sms.texting.app.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, AFTER_CALL_NOTIFICATION_ID, appIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, AFTER_CALL_CHANNEL_ID)
+            .setSmallIcon(R.drawable.logo_msg)
+            .setContentTitle(context.getString(R.string.after_call_disabled_title))
+            .setContentText(context.getString(R.string.after_call_disabled_desc))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.after_call_disabled_desc)))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setOngoing(false)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                return
+            }
+        }
+        NotificationManagerCompat.from(context).notify(AFTER_CALL_NOTIFICATION_ID, builder.build())
     }
 
     /** [foregroundRes] (e.g. logo_msg, which has a transparent background) drawn centered over a
@@ -166,15 +197,34 @@ object NotificationHelper {
         val title = String.format(context.getString(R.string.after_call_reminder_notification_title_template), label)
         val notificationId = reminderId.toInt()
 
-        val hasCallPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-            context, android.Manifest.permission.CALL_PHONE
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        val callIntent = Intent(if (hasCallPermission) Intent.ACTION_CALL else Intent.ACTION_DIAL).apply {
-            data = android.net.Uri.parse("tel:$address")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        val callIntent = if (address.isBlank()) {
+            // ACTION_VIEW on the call log content URI lands on the dialer's recents tab
+            // specifically -- getLaunchIntentForPackage's plain "open the app" can land on
+            // Contacts instead, depending on which tab that app happens to remember last. Not
+            // resolveActivity()-checked first (this Intent only fires later, from a PendingIntent,
+            // when the notification is tapped) -- package-visibility rules can make that check
+            // return a false negative even when the intent would actually resolve fine at tap time.
+            Intent(Intent.ACTION_VIEW, android.provider.CallLog.Calls.CONTENT_URI).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+        } else {
+            val hasCallPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.CALL_PHONE
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            Intent(if (hasCallPermission) Intent.ACTION_CALL else Intent.ACTION_DIAL).apply {
+                data = android.net.Uri.parse("tel:$address")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+        }
+        
+        val trampolineIntent = Intent(context, com.message.sms.texting.app.ui.screens.AfterCallActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+            putExtra("is_call_trampoline", true)
+            putExtra("notif_id", notificationId)
+            putExtra("call_intent", callIntent)
         }
         val pendingIntent = PendingIntent.getActivity(
-            context, notificationId, callIntent,
+            context, notificationId, trampolineIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -359,12 +409,20 @@ object NotificationHelper {
             }
             "call" -> {
                 // direct-call-vs-dialer decision is baked into the intent itself.
-                val hasCallPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                    context, android.Manifest.permission.CALL_PHONE
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                val callIntent = Intent(if (hasCallPermission) Intent.ACTION_CALL else Intent.ACTION_DIAL).apply {
-                    data = android.net.Uri.parse("tel:$address")
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                val callIntent = if (address.isBlank()) {
+                    val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? android.telecom.TelecomManager
+                    val defaultDialerPackage = telecomManager?.defaultDialerPackage
+                    val launchIntent = defaultDialerPackage?.let { context.packageManager.getLaunchIntentForPackage(it) }
+                    launchIntent?.apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                        ?: Intent(Intent.ACTION_DIAL).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                } else {
+                    val hasCallPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.CALL_PHONE
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    Intent(if (hasCallPermission) Intent.ACTION_CALL else Intent.ACTION_DIAL).apply {
+                        data = android.net.Uri.parse("tel:$address")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
                 }
                 val pendingIntent = PendingIntent.getActivity(
                     context, requestCode, callIntent,
