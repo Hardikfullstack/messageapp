@@ -1,4 +1,4 @@
-﻿package com.message.sms.texting.app.utils
+package com.message.sms.texting.app.utils
 
 import android.Manifest
 import android.content.Context
@@ -29,17 +29,8 @@ object SetupState {
 
         val prefs = AppPreferences(context)
         val isFullyOnboarded = prefs.onboardingCompleted && hasNotif && hasPhone
-        // Language selection now happens after Onboarding/Permissions (right before default-SMS),
-        // so it needs to be included here too or this could return true while still on that screen.
-        // USE_FULL_SCREEN_INTENT no longer requested -- AfterCallReceiver drives the
-        // AfterCallActivity launch itself (a delayed direct startActivity(), made reliable by its
-        // overlay-window trick), so it doesn't depend on that permission anymore. MIUI's "Display
-        // pop-up" step is also no longer requested (not needed for the same reason), but Autostart
-        // IS still requested on MIUI, so this has to wait on it too. OnePlus/Oppo/Realme Autostart
-        // is no longer requested at all (the overlay-window trick made it unnecessary there too),
-        // so there's no corresponding wait for it.
         val isPermissionsDone = isFullyOnboarded && Settings.canDrawOverlays(context) &&
-                (!MiuiUtils.isMiui() || prefs.miuiAutostartCompleted) &&
+                (!MiuiUtils.isMiui() || MiuiUtils.isMiuiAutostartGranted(context)) &&
                 prefs.languageSelected
 
         val isDefaultSms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

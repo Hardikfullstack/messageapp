@@ -4,6 +4,7 @@
          alphabetical app lists (e.g. "Display over other apps" settings). Deliberately kept
          separate from app_name so it doesn't leak into in-app UI (About screen, emails, etc). -->
     <string name="app_launcher_name">#Messages: SMS &amp; Texting</string>
+    <string name="splash_brand_name">Messages</string>
 
     <!-- Home screen -->
     <string name="filter_inbox">Inbox</string>

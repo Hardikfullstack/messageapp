@@ -1,12 +1,19 @@
-﻿package com.message.sms.texting.app.ui.screens
+package com.message.sms.texting.app.ui.screens
 
 import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
@@ -20,10 +27,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.message.sms.texting.app.ui.theme.Inter
 import kotlinx.coroutines.delay
 
 import android.os.Build
@@ -129,7 +140,7 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
         // is no longer requested at all (the overlay-window trick makes it unnecessary), so no
         // corresponding wait for it here.
         val isPermissionsDone = isFullyOnboarded && Settings.canDrawOverlays(view.context) &&
-                (!MiuiUtils.isMiui() || prefs.miuiAutostartCompleted)
+                (!MiuiUtils.isMiui() || MiuiUtils.isMiuiAutostartGranted(view.context))
 
         val isDefaultSms =
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -214,7 +225,24 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
         if (showAdLoader) {
             AdLoadingScreen(modifier = Modifier.fillMaxSize())
         } else {
-            SplashLogo()
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                SplashLogo()
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.splash_brand_name),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = Inter,
+                    color = colorResource(R.color.text_title)
+                )
+            }
+            SplashLoaderBar(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 34.dp)
+            )
         }
     }
 }
@@ -229,5 +257,16 @@ private fun SplashLogo() {
         modifier = Modifier
             .size(SplashLogoBoxSize)
             .clip(RoundedCornerShape(SplashLogoBoxRadius))
+    )
+}
+
+@Composable
+private fun SplashLoaderBar(modifier: Modifier = Modifier) {
+    androidx.compose.material3.LinearProgressIndicator(
+        modifier = modifier
+            .height(6.dp),
+        color = colorResource(R.color.primary),
+        trackColor = colorResource(R.color.primary).copy(alpha = 0.25f),
+        strokeCap = androidx.compose.ui.graphics.StrokeCap.Butt
     )
 }

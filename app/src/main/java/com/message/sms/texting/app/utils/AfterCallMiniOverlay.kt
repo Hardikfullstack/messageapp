@@ -43,6 +43,7 @@ object AfterCallMiniOverlay {
         // needs one attached manually or Compose throws (see OverlayLifecycleOwner's doc comment).
         val owner = OverlayLifecycleOwner(appContext as android.app.Application)
         val composeView = ComposeView(appContext).apply {
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
             setContent { InvisibleCard() }
         }
         owner.attachToView(composeView)

@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Messages: SMS &amp; Texting</string>
+    <string name="splash_brand_name">Messages</string>
     <string name="app_launcher_name">#Messages: SMS &amp; Texting</string>
 
     <string name="filter_inbox">Caixa de entrada</string>

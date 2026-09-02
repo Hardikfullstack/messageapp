@@ -1,4 +1,4 @@
-﻿package com.message.sms.texting.app.ui.screens
+package com.message.sms.texting.app.ui.screens
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -758,7 +758,8 @@ fun HomeScreen(
                                     if (msgIndex == null || msgIndex >= messages.itemCount) {
                                         "ad_$rowIndex"
                                     } else {
-                                        "${selectedFilter}_${messages[msgIndex]?.id ?: msgIndex}"
+                                        val id = messages.peek(msgIndex)?.id
+                                        if (id != null) "${selectedFilter}_$id" else "placeholder_${selectedFilter}_$msgIndex"
                                     }
                                 }
                             ) { rowIndex ->
