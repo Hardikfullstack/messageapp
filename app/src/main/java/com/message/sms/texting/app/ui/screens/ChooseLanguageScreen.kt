@@ -81,11 +81,6 @@ fun ChooseLanguageScreen(
                         .clip(RoundedCornerShape(77.dp))
                         .background(colorResource(R.color.primary))
                         .clickable {
-                            // setApplicationLocales() alone doesn't reliably refresh this running
-                            // Activity's already-resolved strings â€” recreate() is required, same
-                            // as the theme/font-size changes elsewhere in Settings. Navigate first
-                            // so the saved instance state recreate() restores from already reflects
-                            // the *next* screen (Onboarding / back to Settings), not this one.
                             LanguageState.setLanguage(context, selectedCode)
                             AnalyticsManager.logEventWithAction(
                                 "language_changed",
@@ -97,9 +92,12 @@ fun ChooseLanguageScreen(
                                 AppPreferences(context).languageSelected = true
                                 onFirstRunDone()
                             } else {
-                                navController.popBackStackWithAd()
+                                navController.popBackStack()
                             }
-                            (context as? android.app.Activity)?.recreate()
+                            val activity = context as? android.app.Activity
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                activity?.recreate()
+                            }, 200)
                         }
                         .padding(horizontal = 24.dp, vertical = 10.dp),
                     contentAlignment = Alignment.Center

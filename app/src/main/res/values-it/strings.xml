@@ -473,7 +473,8 @@
     <string name="ad_is_loading">Caricamento annuncio…</string>
     <string name="offline_dialog_title">Nessuna connessione Internet</string>
     <string name="offline_dialog_desc">Al momento sei offline. L\'invio e la ricezione dei messaggi funzionano ancora correttamente — questo influisce solo sulle funzioni che richiedono Internet.</string>
-    <string name="offline_dialog_button">Apri impostazioni Wi-Fi</string>
+    <string name="offline_dialog_button">Wi-Fi</string>
+    <string name="offline_dialog_button_mobile_data">Dati mobili</string>
     <string name="update_title">Aggiornamento disponibile</string>
     <string name="update_desc">È disponibile una nuova versione dell\'app con le ultime correzioni e miglioramenti. Aggiorna ora per la migliore esperienza.</string>
     <string name="update_button">Aggiorna ora</string>

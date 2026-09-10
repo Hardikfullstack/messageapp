@@ -108,6 +108,14 @@ fun AfterCallScreen(
             result.native_7?.takeIf { it.isNotBlank() }
         } else null
     }
+    // Tried only if native_7 fails to load -- matches the primary+fallback pattern the reference
+    // app uses for its own after-call native ad, instead of relying on a single ad unit.
+    val fallbackNativeAdUnitId = adConfig?.result?.let { result ->
+        if (result.google_ads_on_off == "on" && result.native_9_on_off == "on") {
+            result.native_9?.takeIf { it.isNotBlank() }
+        } else null
+    }
+    var primaryNativeAdFailed by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -138,9 +146,18 @@ fun AfterCallScreen(
             }
         },
         bottomBar = {
-            if (nativeAdUnitId != null) {
+            if (nativeAdUnitId != null && !primaryNativeAdFailed) {
                 NativeAdView(
                     adUnitId = nativeAdUnitId,
+                    template = NativeAdTemplate.MEDIUM,
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    onFailed = { primaryNativeAdFailed = true }
+                )
+            } else if (primaryNativeAdFailed && fallbackNativeAdUnitId != null) {
+                NativeAdView(
+                    adUnitId = fallbackNativeAdUnitId,
                     template = NativeAdTemplate.MEDIUM,
                     modifier = Modifier
                         .navigationBarsPadding()

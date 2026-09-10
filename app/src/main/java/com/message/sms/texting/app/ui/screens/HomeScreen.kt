@@ -67,6 +67,7 @@ import com.message.sms.texting.app.ads.AppOpenBackgroundReturnTrigger
 import com.message.sms.texting.app.ads.AppOpenCounter
 import com.message.sms.texting.app.ads.BannerAdView
 import com.message.sms.texting.app.ads.HomeBannerAdState
+import com.message.sms.texting.app.ads.ListAdCache
 import com.message.sms.texting.app.ads.NativeAdTemplate
 import com.message.sms.texting.app.ads.NativeAdView
 import com.message.sms.texting.app.ui.components.dialogs.RateUsDialog
@@ -712,6 +713,34 @@ fun HomeScreen(
                             }
                         }
                     }
+
+                    // Only the very first ad slot gets a head start (from Splash/DefaultSms's
+                    // native_1 preload, picked up via NativeAdCache's fallback in NativeAdView).
+                    // Every other slot only ever starts loading the instant it first scrolls into
+                    // view, which is why those visibly take a few seconds -- this looks a bit
+                    // ahead of the currently-visible range as the user scrolls and starts loading
+                    // upcoming slots into ListAdCache before their own NativeAdView ever composes,
+                    // so by the time they're actually reached they're often already ready.
+                    if (homeListNativeAdUnitId != null) {
+                        LaunchedEffect(homeListRows, homeListNativeAdUnitId) {
+                            snapshotFlow { currentListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+                                .collect { lastVisibleIndex ->
+                                    val lookaheadEnd = (lastVisibleIndex + 15).coerceAtMost(homeListRows.lastIndex)
+                                    if (lookaheadEnd < lastVisibleIndex) return@collect
+                                    // Only the next 2 upcoming ad slots, not every slot in the
+                                    // lookahead window -- stops as soon as 2 are found.
+                                    var found = 0
+                                    for (rowIndex in lastVisibleIndex..lookaheadEnd) {
+                                        if (homeListRows.getOrNull(rowIndex) == null) {
+                                            ListAdCache.preload(context, homeListNativeAdUnitId, "home_native_$rowIndex")
+                                            found++
+                                            if (found >= 2) break
+                                        }
+                                    }
+                                }
+                        }
+                    }
+
                     key(selectedFilter) {
                         LazyColumn(
                             state = currentListState,
@@ -768,7 +797,10 @@ fun HomeScreen(
                                     NativeAdView(
                                         adUnitId = homeListNativeAdUnitId!!,
                                         template = NativeAdTemplate.SMALL,
-                                        modifier = Modifier.padding(vertical = 6.dp)
+                                        modifier = Modifier.padding(vertical = 6.dp),
+                                        // Survives leaving and returning to Home (e.g. via Chat)
+                                        // without reloading -- see ListAdCache's doc comment.
+                                        cacheKey = "home_native_$rowIndex"
                                     )
                                     return@items
                                 }

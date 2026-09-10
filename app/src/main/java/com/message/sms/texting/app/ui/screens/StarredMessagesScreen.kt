@@ -163,7 +163,8 @@ fun StarredMessagesScreen(
                             NativeAdView(
                                 adUnitId = listNativeAdUnitId!!,
                                 template = NativeAdTemplate.SMALL,
-                                modifier = Modifier.padding(vertical = 6.dp)
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                cacheKey = "starred_native_$idx"
                             )
                         } else {
                             StarredMessageItem(

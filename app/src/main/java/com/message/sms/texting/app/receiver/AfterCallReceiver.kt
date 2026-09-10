@@ -30,6 +30,10 @@ class AfterCallReceiver : BroadcastReceiver() {
         when (state) {
             TelephonyManager.EXTRA_STATE_RINGING -> {
                 wasRinging = true
+                // Preloaded here instead of waiting for the call to end -- gives the native ad
+                // the whole call's duration to load (could be a minute+) instead of just the ~2s
+                // head start between call-end and AfterCallScreen actually showing.
+                preloadAfterCallNativeAds(context)
                 return
             }
             TelephonyManager.EXTRA_STATE_OFFHOOK -> {
@@ -38,6 +42,9 @@ class AfterCallReceiver : BroadcastReceiver() {
                 if (previousState != TelephonyManager.EXTRA_STATE_OFFHOOK) {
                     callConnectTimeMs = System.currentTimeMillis()
                 }
+                // Also tried here (not just RINGING) -- an outgoing call never passes through
+                // RINGING locally, so this is its only pre-call-end preload opportunity.
+                preloadAfterCallNativeAds(context)
                 return
             }
             TelephonyManager.EXTRA_STATE_IDLE -> Unit
@@ -76,13 +83,6 @@ class AfterCallReceiver : BroadcastReceiver() {
         }
 
         val appContext = context.applicationContext
-
-        val cachedResult = com.message.sms.texting.app.viewmodel.AppConfigViewModel.readCachedResult(appContext)
-        if (cachedResult?.google_ads_on_off == "on" && cachedResult.native_7_on_off == "on") {
-            cachedResult.native_7?.takeIf { it.isNotBlank() }?.let {
-                com.message.sms.texting.app.ads.NativeAdCache.preload(appContext, it)
-            }
-        }
 
         // Everything below runs synchronously, right here on this call -- no coroutine, no
         // goAsync(). A competing app's equivalent receiver (confirmed by decompiling it) does the
@@ -134,5 +134,31 @@ class AfterCallReceiver : BroadcastReceiver() {
                 e.printStackTrace()
             }
         }, 2000L)
+    }
+
+    /** Starts loading After Call's native ad (primary native_7 + fallback native_9, in parallel)
+     * as early as the call's RINGING/OFFHOOK state -- not at call-end -- so it has the whole
+     * call's duration as a head start instead of just the ~2s between call-end and AfterCallScreen
+     * actually showing. Safe to call multiple times per call (RINGING, then OFFHOOK): both
+     * NativeAdCache.preload() calls self-guard against a duplicate in-flight/already-cached load. */
+    private fun preloadAfterCallNativeAds(context: Context) {
+        if (!AfterCallState.readEnabled(context)) return
+        if (!Settings.canDrawOverlays(context)) return
+        val appContext = context.applicationContext
+        val cachedResult = com.message.sms.texting.app.viewmodel.AppConfigViewModel.readCachedResult(appContext)
+        if (cachedResult?.google_ads_on_off != "on") return
+        if (cachedResult.native_7_on_off == "on") {
+            cachedResult.native_7?.takeIf { it.isNotBlank() }?.let {
+                com.message.sms.texting.app.ads.NativeAdCache.preload(appContext, it)
+            }
+        }
+        // Fallback (native_9) preloaded in parallel with the primary, not only after it fails --
+        // matches AfterCallScreen's own primary/fallback failover, which needs native_9 ready to
+        // switch to immediately rather than starting its load only once native_7 has already failed.
+        if (cachedResult.native_9_on_off == "on") {
+            cachedResult.native_9?.takeIf { it.isNotBlank() }?.let {
+                com.message.sms.texting.app.ads.NativeAdCache.preload(appContext, it)
+            }
+        }
     }
 }

@@ -32,6 +32,7 @@ class MessagesApp : Application() {
         MmsCompressionState.applyPersistedMode(this)
         NotificationSettingsState.applyPersistedMode(this)
         AfterCallState.applyPersistedMode(this)
+        com.message.sms.texting.app.ads.AdConnectivityRetry.start(this)
         EmojiManager.install(GoogleEmojiProvider())
 
         // Off the main thread â€” MobileAds.initialize() does blocking I/O internally.

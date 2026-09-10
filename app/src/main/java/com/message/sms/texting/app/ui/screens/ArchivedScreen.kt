@@ -365,7 +365,8 @@ fun ArchivedScreen(navController: NavController) {
                             NativeAdView(
                                 adUnitId = listNativeAdUnitId!!,
                                 template = NativeAdTemplate.SMALL,
-                                modifier = Modifier.padding(vertical = 6.dp)
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                cacheKey = "archived_native_$rowIdx"
                             )
                             return@items
                         }

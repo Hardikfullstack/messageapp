@@ -83,7 +83,8 @@
     <string name="toast_no_internet">No internet connection</string>
     <string name="offline_dialog_title">No Internet Connection</string>
     <string name="offline_dialog_desc">You\'re offline right now. Sending and receiving texts still works fine — this only affects things that need the internet.</string>
-    <string name="offline_dialog_button">Open Wi-Fi Settings</string>
+    <string name="offline_dialog_button">Wi-Fi</string>
+    <string name="offline_dialog_button_mobile_data">Mobile Data</string>
     <string name="maintenance_dialog_title">Under Maintenance</string>
     <string name="maintenance_dialog_desc">We\'re making some improvements right now. Please check back in a little while.</string>
     <string name="maintenance_dialog_exit_button">Exit App</string>

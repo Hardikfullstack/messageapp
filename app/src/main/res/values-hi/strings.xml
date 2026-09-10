@@ -473,7 +473,8 @@
     <string name="ad_is_loading">विज्ञापन लोड हो रहा है…</string>
     <string name="offline_dialog_title">इंटरनेट कनेक्शन नहीं है</string>
     <string name="offline_dialog_desc">आप अभी ऑफ़लाइन हैं। मैसेज भेजना और प्राप्त करना अभी भी ठीक से काम करता है — यह सिर्फ़ उन चीज़ों को प्रभावित करता है जिन्हें इंटरनेट की ज़रूरत होती है।</string>
-    <string name="offline_dialog_button">वाई-फाई सेटिंग्स खोलें</string>
+    <string name="offline_dialog_button">वाई-फाई</string>
+    <string name="offline_dialog_button_mobile_data">मोबाइल डेटा</string>
     <string name="update_title">अपडेट उपलब्ध है</string>
     <string name="update_desc">ऐप का एक नया वर्शन नवीनतम फ़िक्स और सुधारों के साथ उपलब्ध है। बेहतर अनुभव के लिए अभी अपडेट करें।</string>
     <string name="update_button">अभी अपडेट करें</string>

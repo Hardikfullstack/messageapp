@@ -198,7 +198,8 @@ fun ScheduledMessagesScreen(
                         NativeAdView(
                             adUnitId = listNativeAdUnitId!!,
                             template = NativeAdTemplate.SMALL,
-                            modifier = Modifier.padding(vertical = 6.dp)
+                            modifier = Modifier.padding(vertical = 6.dp),
+                            cacheKey = "scheduled_native_$idx"
                         )
                     } else {
                         ScheduledMessageItem(

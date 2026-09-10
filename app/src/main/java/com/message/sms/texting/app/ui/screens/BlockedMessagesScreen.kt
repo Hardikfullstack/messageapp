@@ -246,7 +246,8 @@ fun BlockedMessagesScreen(navController: NavController) {
                         NativeAdView(
                             adUnitId = listNativeAdUnitId!!,
                             template = NativeAdTemplate.SMALL,
-                            modifier = Modifier.padding(vertical = 6.dp)
+                            modifier = Modifier.padding(vertical = 6.dp),
+                            cacheKey = "blocked_native_$idx"
                         )
                       } else {
                         val isSelected = selectedContacts.contains(contact)

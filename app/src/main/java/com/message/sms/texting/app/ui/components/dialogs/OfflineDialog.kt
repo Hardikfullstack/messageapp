@@ -2,6 +2,7 @@
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -38,7 +39,8 @@ fun OfflineDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
     val strTitle = stringResource(R.string.offline_dialog_title)
     val strDesc = stringResource(R.string.offline_dialog_desc)
-    val strButton = stringResource(R.string.offline_dialog_button)
+    val strWifiButton = stringResource(R.string.offline_dialog_button)
+    val strMobileDataButton = stringResource(R.string.offline_dialog_button_mobile_data)
     val strClose = stringResource(R.string.content_desc_close)
 
     Dialog(
@@ -86,30 +88,56 @@ fun OfflineDialog(onDismiss: () -> Unit) {
                     lineHeight = 20.sp
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        // The Wi-Fi Settings round trip backgrounds and re-foregrounds this
-                        // Activity â€” without this, that return would look like a normal
-                        // app-switch-back and could trigger an App Open ad right as the user is
-                        // just trying to fix their connection.
-                        AppOpenBackgroundReturnTrigger.isAdPaused = true
-                        context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.primary)),
-                    shape = RoundedCornerShape(24.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = strButton,
-                        fontFamily = Inter,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    OutlinedButton(
+                        onClick = {
+                            // The Settings round trip backgrounds and re-foregrounds this Activity
+                            // -- without this, that return would look like a normal app-switch-back
+                            // and could trigger an App Open ad right as the user is just trying to
+                            // fix their connection.
+                            AppOpenBackgroundReturnTrigger.isAdPaused = true
+                            context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        border = BorderStroke(1.dp, colorResource(R.color.primary)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorResource(R.color.primary)),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text(
+                            text = strWifiButton,
+                            fontFamily = Inter,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            AppOpenBackgroundReturnTrigger.isAdPaused = true
+                            context.startActivity(Intent(Settings.ACTION_DATA_ROAMING_SETTINGS))
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.primary)),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text(
+                            text = strMobileDataButton,
+                            fontFamily = Inter,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(6.dp))
             }

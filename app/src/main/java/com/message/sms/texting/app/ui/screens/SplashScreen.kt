@@ -89,13 +89,15 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
                 InterstitialAdManager.preload(view.context, it)
             }
         }
-        if (!AppPreferences(view.context).languageSelected) {
-            if (result.native_2_on_off == "on") {
-                result.native_2?.takeIf { it.isNotBlank() }?.let {
-                    NativeAdCache.preload(view.context, it)
-                }
-            }
-        } else {
+        // native_2 (ChooseLanguageScreen's ad) is NOT preloaded here anymore -- moved to
+        // MainActivity's own LaunchedEffect(adConfig, canRequestAds), which stays alive for the
+        // whole Activity session. This one only lives as long as Splash itself (~1.1s branding
+        // delay) -- if adConfig arrived any later than that (e.g. the very first fetch, no cache
+        // yet), Splash had already navigated away to Permissions before this ever got a chance to
+        // fire, and nothing was left listening for adConfig to catch up. ChooseLanguageScreen
+        // (reached after Permissions) then found nothing cached and loaded fresh, visibly slower
+        // -- exactly the first-run race this was rewritten to fix.
+        if (AppPreferences(view.context).languageSelected) {
             if (result.native_1_on_off == "on") {
                 result.native_1?.takeIf { it.isNotBlank() }?.let {
                     NativeAdCache.preload(view.context, it)

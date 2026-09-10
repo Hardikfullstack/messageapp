@@ -473,7 +473,8 @@
     <string name="ad_is_loading">جارٍ تحميل الإعلان…</string>
     <string name="offline_dialog_title">لا يوجد اتصال بالإنترنت</string>
     <string name="offline_dialog_desc">أنت غير متصل بالإنترنت الآن. لا يزال إرسال الرسائل واستلامها يعمل بشكل جيد — هذا يؤثر فقط على الأشياء التي تحتاج إلى الإنترنت.</string>
-    <string name="offline_dialog_button">فتح إعدادات Wi-Fi</string>
+    <string name="offline_dialog_button">Wi-Fi</string>
+    <string name="offline_dialog_button_mobile_data">بيانات الجوال</string>
     <string name="update_title">التحديث متوفر</string>
     <string name="update_desc">يتوفر إصدار جديد من التطبيق يتضمن أحدث الإصلاحات والتحسينات. حدّث الآن للحصول على أفضل تجربة.</string>
     <string name="update_button">التحديث الآن</string>

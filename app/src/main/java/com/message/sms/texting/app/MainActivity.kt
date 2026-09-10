@@ -86,6 +86,22 @@ class MainActivity : AppCompatActivity() {
                         GlobalBackAdManager.configure(application, backPrimary, backFallback)
                     }
                 }
+
+                // ChooseLanguageScreen's ad (first-run only) -- lives here instead of Splash's
+                // own short-lived LaunchedEffect, which only stays alive for Splash's ~1.1s
+                // branding delay. If adConfig arrived any later than that (e.g. the very first
+                // fetch this install, no cache yet), Splash had already navigated to Permissions
+                // before its preload ever got a chance to fire, and nothing was left listening
+                // for adConfig to catch up -- ChooseLanguageScreen then loaded fresh, visibly
+                // slower. This LaunchedEffect stays alive for the whole Activity session, so it
+                // reliably catches adConfig whenever it actually arrives.
+                if (!com.message.sms.texting.app.utils.AppPreferences(this@MainActivity).languageSelected &&
+                    result.native_2_on_off == "on"
+                ) {
+                    result.native_2?.takeIf { it.isNotBlank() }?.let {
+                        com.message.sms.texting.app.ads.NativeAdCache.preload(this@MainActivity, it)
+                    }
+                }
             }
 
             MessagesTheme(darkTheme = isSystemInDarkTheme()) {

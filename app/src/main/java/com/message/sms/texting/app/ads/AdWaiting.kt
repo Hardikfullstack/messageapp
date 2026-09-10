@@ -8,7 +8,7 @@ import kotlinx.coroutines.delay
  * (with a loading indicator shown by the caller) gives them a real chance to be ready instead of
  * silently skipping the ad on every cold start.
  */
-suspend fun waitUntilAdReady(timeoutMillis: Long = 3500L, isReady: () -> Boolean) {
+suspend fun waitUntilAdReady(timeoutMillis: Long = 5000L, isReady: () -> Boolean) {
     var waited = 0L
     val step = 150L
     while (!isReady() && waited < timeoutMillis) {

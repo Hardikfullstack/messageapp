@@ -6,7 +6,9 @@ import android.os.Bundle
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.message.sms.texting.app.utils.SetupState
+import kotlinx.coroutines.launch
 
 /**
  * Shows an App Open ad when the app returns to the foreground after being backgrounded (user
@@ -68,6 +70,23 @@ object AppOpenBackgroundReturnTrigger : Application.ActivityLifecycleCallbacks, 
 
         if (AppOpenAdManager.isReady()) {
             AppOpenAdManager.show(activity, unitId) {}
+            return
+        }
+
+        // Unlike Splash (which has a dedicated loading screen + waitUntilAdReady), a background
+        // return has no such wait built in -- isReady() was checked exactly once, synchronously,
+        // right here. Since the previous ad's dismissal only just triggered a fresh preload
+        // (AppOpenAdManager.show's onAdDismissedFullScreenContent), it's very often still loading
+        // at this exact instant -- silently giving up here was why this practically never showed.
+        // Give it the same kind of brief bounded chance instead.
+        owner.lifecycleScope.launch {
+            waitUntilAdReady(timeoutMillis = 3000L) { AppOpenAdManager.isReady() }
+            val nowActivity = currentActivity ?: return@launch
+            if (AppOpenAdManager.isReady() &&
+                nowActivity !is com.message.sms.texting.app.ui.screens.AfterCallActivity
+            ) {
+                AppOpenAdManager.show(nowActivity, unitId) {}
+            }
         }
     }
 

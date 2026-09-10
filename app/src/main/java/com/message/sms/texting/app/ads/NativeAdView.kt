@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,7 +69,15 @@ fun NativeAdView(
     adUnitId: String,
     template: NativeAdTemplate,
     modifier: Modifier = Modifier,
-    compact: Boolean = false
+    compact: Boolean = false,
+    // Non-null only for slots that must survive navigating away and back without reloading
+    // (list screens: Home, Archived, Starred, Scheduled, Blocked). See ListAdCache's doc comment
+    // for why NativeAdCache (the plain single-slot cache used otherwise) can't cover this alone.
+    cacheKey: String? = null,
+    // Fires once, the moment this ad unit fails to load -- lets a caller fail over to a
+    // different ad unit id (see AfterCallScreen's primary/fallback native ad) instead of just
+    // silently collapsing like this composable does on its own.
+    onFailed: () -> Unit = {}
 ) {
     val context = LocalContext.current
     // The Activity intercepts uiMode config changes (see AndroidManifest) instead of recreating,
@@ -76,25 +86,47 @@ fun NativeAdView(
     // this composable (and the AndroidView's update{} below) to rerun when it changes, so
     // bindNativeAd can re-apply the correct color each time.
     val isDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
-    var nativeAd by remember(adUnitId) { mutableStateOf(NativeAdCache.take(adUnitId)) }
-    var hasFailed by remember(adUnitId) { mutableStateOf(false) }
+    var nativeAd by remember(adUnitId, cacheKey) {
+        mutableStateOf(cacheKey?.let { ListAdCache.get(it) } ?: NativeAdCache.take(adUnitId))
+    }
+    var hasFailed by remember(adUnitId, cacheKey) { mutableStateOf(false) }
 
-    DisposableEffect(adUnitId) {
-        // A cached ad (preloaded ahead of time via NativeAdCache, e.g. from Splash) is already
-        // in hand â€” skip loading a fresh one.
+    // Retries a failed load once connectivity comes back -- without this, a load that failed
+    // while offline (e.g. the whole "you're offline" dialog scenario) just sits failed forever,
+    // since the DisposableEffect below only fires once per composable lifetime on its own.
+    var retryGeneration by remember(adUnitId, cacheKey) { mutableStateOf(0) }
+    val reconnectTick by AdConnectivityRetry.tick.collectAsState()
+    LaunchedEffect(reconnectTick) {
+        if (hasFailed) {
+            hasFailed = false
+            nativeAd = null
+            retryGeneration++
+        }
+    }
+
+    DisposableEffect(adUnitId, cacheKey, retryGeneration) {
+        // A cached ad (preloaded ahead of time via NativeAdCache, or already held in
+        // ListAdCache from an earlier visit) is already in hand â€” skip loading a fresh one.
         if (nativeAd != null) {
-            return@DisposableEffect onDispose { nativeAd?.destroy() }
+            return@DisposableEffect onDispose {
+                // cacheKey slots are only ever destroyed by ListAdCache's own LRU eviction --
+                // destroying here too would defeat the whole point of caching them (every scroll
+                // off-screen, or navigating away and back, disposes this composable).
+                if (cacheKey == null) nativeAd?.destroy()
+            }
         }
         hasFailed = false
         val adLoader = AdLoader.Builder(context, adUnitId)
             .forNativeAd { ad ->
                 nativeAd = ad
+                if (cacheKey != null) ListAdCache.put(cacheKey, ad)
                 AnalyticsManager.logAdEvent("native", adUnitId, "loaded")
             }
             .withAdListener(object : AdListener() {
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     hasFailed = true
                     AnalyticsManager.logAdEvent("native", adUnitId, "failed_to_load")
+                    onFailed()
                 }
 
                 override fun onAdClicked() {
@@ -104,7 +136,7 @@ fun NativeAdView(
             .build()
         AnalyticsManager.logAdEvent("native", adUnitId, "request")
         adLoader.loadAd(AdRequest.Builder().build())
-        onDispose { nativeAd?.destroy() }
+        onDispose { if (cacheKey == null) nativeAd?.destroy() }
     }
 
     // No fill / network error / misconfigured unit id â€” collapse rather than shimmering forever.
