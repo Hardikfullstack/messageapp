@@ -170,6 +170,49 @@ fun HomeScreen(
         }
     }
 
+    // Runs on every resume (not just once), per Google's own guidance for the IMMEDIATE update
+    // flow: (1) resume a stalled update instead of leaving it silently abandoned if the flow got
+    // interrupted mid-way (a call came in, the app backgrounded, etc.), and (2) log the outcome
+    // of a just-finished flow (see MainActivity.onActivityResult -> InAppUpdateResult) for
+    // visibility -- our own dialog above isn't dismissed on tapping "Update", so the user lands
+    // back on it naturally either way if the flow was cancelled or failed; this doesn't need to
+    // act on the result beyond logging it.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event != androidx.lifecycle.Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
+
+            com.message.sms.texting.app.utils.InAppUpdateResult.pendingResultCode?.let { resultCode ->
+                com.message.sms.texting.app.utils.InAppUpdateResult.pendingResultCode = null
+                val outcome = when (resultCode) {
+                    Activity.RESULT_OK -> "ok"
+                    Activity.RESULT_CANCELED -> "cancelled"
+                    com.google.android.play.core.install.model.ActivityResult.RESULT_IN_APP_UPDATE_FAILED -> "failed"
+                    else -> "unknown_$resultCode"
+                }
+                AnalyticsManager.logEventWithAction(
+                    eventName = "app_update_dialog",
+                    screenName = "HomeScreen",
+                    action = "Immediate Update Flow Result",
+                    extraParams = mapOf("result" to outcome)
+                )
+            }
+
+            (context as? Activity)?.let { activity ->
+                appUpdateHelper.resumeStalledUpdateIfAny { appUpdateInfo ->
+                    appUpdateHelper.startUpdate(
+                        activity,
+                        appUpdateInfo,
+                        com.google.android.play.core.install.model.AppUpdateType.IMMEDIATE,
+                        com.message.sms.texting.app.utils.InAppUpdateResult.REQUEST_CODE
+                    )
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     // Maintenance (AppNavigation.kt) is a separate overlay Dialog() â€” without this guard, both
     // could show stacked at once if the panel ever has both flags on simultaneously.
     if (showUpdateDialog && adConfig?.result?.extra_data_1_on_off != "on") {
@@ -192,34 +235,53 @@ fun HomeScreen(
                     action = "Update Accepted"
                 )
                 val openPlayStore = {
-                    val playStoreLink = adConfig?.result?.app_link
-                        ?.takeIf { it.isNotBlank() }
-                        ?: "https://play.google.com/store/apps/details?id=${context.packageName}"
-                    val uri = runCatching { android.net.Uri.parse(playStoreLink) }.getOrNull()
-                    if (uri != null) {
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                    // Always built from the app's own package name -- never from the panel's
+                    // app_link field. There's never a legitimate reason this app's Play Store URL
+                    // would be anything other than this, so a remote value can only ever be a
+                    // liability (a misconfigured panel value silently broke this before). Same
+                    // market:// -> https:// fallback pattern as RateUsHelper's
+                    // openPlayStoreListing(), for the same reason.
+                    AppOpenBackgroundReturnTrigger.isAdPaused = true
+                    try {
+                        context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=${context.packageName}")))
+                    } catch (e: android.content.ActivityNotFoundException) {
                         try {
-                            // Opening Play Store backgrounds/re-foregrounds this Activity â€” without
-                            // this, that return would look like a normal app-switch-back and could
-                            // trigger an App Open ad right as the user is trying to update.
-                            AppOpenBackgroundReturnTrigger.isAdPaused = true
-                            context.startActivity(intent)
-                        } catch (e: android.content.ActivityNotFoundException) {
+                            context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")))
+                        } catch (e2: android.content.ActivityNotFoundException) {
                             // No Play Store app or browser available â€” nothing more we can do.
                         }
                     }
                 }
 
                 if (adConfig?.result?.extra_data_2_on_off == "on") {
+                    // Play Core's appUpdateInfo Task can, on some devices/Play Store app states,
+                    // just never call back at all -- neither success nor failure -- leaving the
+                    // Update button looking like it did nothing (confirmed happening on a real
+                    // device). This guard forces the same Play Store fallback after a few seconds
+                    // if none of the listener methods have fired by then, instead of leaving the
+                    // user stuck forever on a call Google's own SDK never resolved.
+                    var handled = false
+                    val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+                    val timeoutRunnable = Runnable {
+                        if (!handled) {
+                            handled = true
+                            openPlayStore()
+                        }
+                    }
+                    timeoutHandler.postDelayed(timeoutRunnable, 4000L)
+
                     appUpdateHelper.checkForUpdate(object : AppUpdateHelper.UpdateStatusListener {
                         override fun onUpdateAvailable(appUpdateInfo: com.google.android.play.core.appupdate.AppUpdateInfo) {
+                            if (handled) return
+                            handled = true
+                            timeoutHandler.removeCallbacks(timeoutRunnable)
                             val activity = context as? Activity
                             if (activity != null) {
                                 appUpdateHelper.startUpdate(
                                     activity,
                                     appUpdateInfo,
                                     com.google.android.play.core.install.model.AppUpdateType.IMMEDIATE,
-                                    999,
+                                    com.message.sms.texting.app.utils.InAppUpdateResult.REQUEST_CODE,
                                     onFailure = openPlayStore
                                 )
                             } else {
@@ -228,10 +290,16 @@ fun HomeScreen(
                         }
 
                         override fun onUpdateNotAvailable() {
+                            if (handled) return
+                            handled = true
+                            timeoutHandler.removeCallbacks(timeoutRunnable)
                             openPlayStore()
                         }
 
                         override fun onUpdateFailed(e: Exception) {
+                            if (handled) return
+                            handled = true
+                            timeoutHandler.removeCallbacks(timeoutRunnable)
                             openPlayStore()
                         }
 

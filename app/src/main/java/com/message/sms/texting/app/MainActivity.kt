@@ -40,6 +40,19 @@ class MainActivity : AppCompatActivity() {
         super.attachBaseContext(newBase.createConfigurationContext(config))
     }
 
+    // Play Core's IMMEDIATE in-app-update flow (HomeScreen.kt) is launched the classic
+    // startActivityForResult way, not via the newer Activity Result API -- a Composable can't
+    // override onActivityResult itself, so the outcome is forwarded through a small shared object
+    // for whichever screen wants to react to it (currently: just logging it, see
+    // InAppUpdateResult's doc comment for why nothing more than that is needed right now).
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == com.message.sms.texting.app.utils.InAppUpdateResult.REQUEST_CODE) {
+            com.message.sms.texting.app.utils.InAppUpdateResult.pendingResultCode = resultCode
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Must run before super.onCreate() â€” hands off from the system splash (Theme.App.Starting,
         // see themes.xml) to postSplashScreenTheme as soon as this Activity's first frame is
