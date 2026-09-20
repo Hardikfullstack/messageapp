@@ -33,7 +33,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         if (threadId == -1L) return
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, threadId.toInt())
 
-        val pendingResult = goAsync()
+        val pendingResult = goAsync() ?: return
         val repository = SmsRepository(context.applicationContext)
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -73,7 +73,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult.finish()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

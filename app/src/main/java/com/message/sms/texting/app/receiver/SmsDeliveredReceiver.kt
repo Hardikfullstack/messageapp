@@ -15,7 +15,7 @@ class SmsDeliveredReceiver : BroadcastReceiver() {
         if (resultCode != Activity.RESULT_OK) return
 
         val messageId = intent.data?.lastPathSegment?.toLongOrNull() ?: return
-        val pendingResult = goAsync()
+        val pendingResult = goAsync() ?: return
         val repository = SmsRepository(context)
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -24,7 +24,11 @@ class SmsDeliveredReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult.finish()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

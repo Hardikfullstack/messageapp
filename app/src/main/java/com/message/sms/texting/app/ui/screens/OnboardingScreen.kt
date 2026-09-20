@@ -20,9 +20,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.message.sms.texting.app.utils.AnalyticsManager
 import com.message.sms.texting.app.utils.AppPreferences
 import com.message.sms.texting.app.ui.modifiers.animatedPulse
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import androidx.compose.runtime.getValue
@@ -33,7 +30,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
 import android.os.Build
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -69,18 +65,6 @@ fun OnboardingScreen(
     val prefs = AppPreferences(context)
     var currentPermissionStep by remember { mutableStateOf(0) }
 
-    // Tracks which permission the settings dialog below should describe, since it's shared
-    // between the notification step (1) and the phone/call-log step (2).
-    var deniedPermissionIsNotification by remember { mutableStateOf(false) }
-    var showSettingsDialog by remember { mutableStateOf(false) }
-    var isWaitingForSettings by remember { mutableStateOf(false) }
-
-    // First denial of a given permission just stops (back to step 0, main button) and waits for
-    // the user to tap it again -- no dialog yet, no auto-advance to the next permission. Only a
-    // second denial in a row for that same permission opens the "go to Settings" dialog.
-    var notificationDeniedOnce by remember { mutableStateOf(false) }
-    var phoneDeniedOnce by remember { mutableStateOf(false) }
-
     // Used only to auto-skip the intro below if both permissions were already granted before
     // this screen was even reached -- re-checked at every point permission state could change.
     var isNotifGranted by remember { mutableStateOf(false) }
@@ -110,93 +94,22 @@ fun OnboardingScreen(
         }
     }
 
+    // No retry/settings-dialog detour on denial anymore -- whatever the user picks (allow or
+    // deny) for a permission, the flow immediately moves on to the next step. Chaining straight
+    // through like this is what makes the two system permission dialogs appear back-to-back
+    // instead of pausing on a denial and waiting for another tap.
     val notificationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
+    ) {
         refreshGrantedStatus()
-        if (granted) {
-            currentPermissionStep = 2
-        } else if (!notificationDeniedOnce) {
-            notificationDeniedOnce = true
-            currentPermissionStep = 0
-        } else {
-            deniedPermissionIsNotification = true
-            showSettingsDialog = true
-        }
+        currentPermissionStep = 2
     }
 
     val phoneLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { result ->
+    ) {
         refreshGrantedStatus()
-        val allGranted = result.values.all { it }
-        if (allGranted) {
-            currentPermissionStep = 3
-        } else if (!phoneDeniedOnce) {
-            phoneDeniedOnce = true
-            currentPermissionStep = 0
-        } else {
-            deniedPermissionIsNotification = false
-            showSettingsDialog = true
-        }
-    }
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && isWaitingForSettings) {
-                isWaitingForSettings = false
-                refreshGrantedStatus()
-                if (deniedPermissionIsNotification) {
-                    val hasNotif = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                        ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.POST_NOTIFICATIONS
-                        ) == PackageManager.PERMISSION_GRANTED
-                    if (hasNotif) {
-                        showSettingsDialog = false
-                        currentPermissionStep = 2
-                    } else {
-                        showSettingsDialog = true
-                    }
-                } else {
-                    val hasPhoneGroup = ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.READ_PHONE_STATE
-                    ) == PackageManager.PERMISSION_GRANTED &&
-                        ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.CALL_PHONE
-                        ) == PackageManager.PERMISSION_GRANTED
-                    if (hasPhoneGroup) {
-                        showSettingsDialog = false
-                        currentPermissionStep = 3
-                    } else {
-                        showSettingsDialog = true
-                    }
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    if (showSettingsDialog) {
-        PermissionSettingsDialog(
-            onDismiss = { showSettingsDialog = false },
-            onOpenSettings = {
-                isWaitingForSettings = true
-                val intent =
-                    android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                intent.data = android.net.Uri.fromParts("package", context.packageName, null)
-                context.startActivity(intent)
-                currentPermissionStep = 0
-            },
-            permissionDescLabel = if (deniedPermissionIsNotification) stringResource(R.string.permission_label_notification) else stringResource(R.string.permission_label_phone),
-            permissionStepLabel = if (deniedPermissionIsNotification) stringResource(R.string.permission_step_label_notification) else stringResource(R.string.permission_step_label_phone)
-        )
+        currentPermissionStep = 3
     }
 
     LaunchedEffect(currentPermissionStep) {

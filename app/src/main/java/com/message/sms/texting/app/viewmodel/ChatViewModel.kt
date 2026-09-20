@@ -52,6 +52,8 @@ class ChatViewModel(
 
     private val draftKey: String get() = if (isGroupMode) "group_$groupId" else address
 
+    private var actualThreadId = threadId
+
     init {
         if (isGroupMode) {
             loadGroupMessages()
@@ -64,8 +66,6 @@ class ChatViewModel(
             }
         }
     }
-
-    private var actualThreadId = threadId
 
     private fun loadGroupMessages() {
         viewModelScope.launch {

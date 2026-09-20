@@ -20,7 +20,7 @@ class ReminderReceiver : BroadcastReceiver() {
         if (reminderId == -1L) return
 
         val appContext = context.applicationContext
-        val pendingResult = goAsync()
+        val pendingResult = goAsync() ?: return
         val repository = SmsRepository(appContext)
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -33,7 +33,11 @@ class ReminderReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult.finish()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

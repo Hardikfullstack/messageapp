@@ -23,7 +23,7 @@ class MmsReceiver : BroadcastReceiver() {
             return
         }
 
-        val pendingResult = goAsync()
+        val pendingResult = goAsync() ?: return
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val notification = PduParser.parseNotificationInd(data)
@@ -84,7 +84,11 @@ class MmsReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult.finish()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

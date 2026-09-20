@@ -46,6 +46,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedGroupIds = MutableStateFlow<Set<Long>>(emptySet())
     val selectedGroupIds: StateFlow<Set<Long>> = _selectedGroupIds.asStateFlow()
 
+    private val _currentFilter = MutableStateFlow(com.message.sms.texting.app.ui.components.FilterConfig())
+    val currentFilter: StateFlow<com.message.sms.texting.app.ui.components.FilterConfig> = _currentFilter.asStateFlow()
+
     val drafts: StateFlow<Map<String, String>> = repository.getAllDraftsFlow()
         .map { list -> list.associate { it.address to it.body } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
@@ -84,9 +87,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             setCategory(0)
         }
     }
-
-    private val _currentFilter = MutableStateFlow(com.message.sms.texting.app.ui.components.FilterConfig())
-    val currentFilter: StateFlow<com.message.sms.texting.app.ui.components.FilterConfig> = _currentFilter.asStateFlow()
 
     // Call this when user clicks a filter chip
     fun setCategory(categoryId: Int) {

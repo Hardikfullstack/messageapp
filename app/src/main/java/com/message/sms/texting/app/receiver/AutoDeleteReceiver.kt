@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 class AutoDeleteReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val pendingResult = goAsync()
+        val pendingResult = goAsync() ?: return
         val appContext = context.applicationContext
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -26,7 +26,11 @@ class AutoDeleteReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult.finish()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

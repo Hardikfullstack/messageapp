@@ -27,6 +27,15 @@ class SmsReceiver : BroadcastReceiver() {
                         val timestamp = msg.timestampMillis
                         
                         val pendingResult = goAsync()
+                        if (pendingResult == null) {
+                            // goAsync() is documented to be able to return null in some cases --
+                            // confirmed happening on real devices via Crashlytics (calling
+                            // finish() on that null result was the exact cause of this app's
+                            // single most common crash: 33 events / 12 users across 1.0.0-1.0.3).
+                            // Can't extend the receiver's lifetime without it, so there's nothing
+                            // safe left to do for this message.
+                            continue
+                        }
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
                                 val repository = SmsRepository(context.applicationContext as Application)
@@ -92,7 +101,14 @@ class SmsReceiver : BroadcastReceiver() {
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             } finally {
-                                pendingResult.finish()
+                                try {
+                                    pendingResult.finish()
+                                } catch (e: Exception) {
+                                    // Defensive -- finish() can itself throw on some OEMs (e.g.
+                                    // called after the receiver's timeout window already expired).
+                                    // Never let cleanup crash the receiver.
+                                    e.printStackTrace()
+                                }
                             }
                         }
                     } catch (e: Exception) {

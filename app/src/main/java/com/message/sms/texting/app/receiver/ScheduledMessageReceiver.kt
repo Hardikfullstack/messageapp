@@ -20,7 +20,7 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
         val messageId = intent.getLongExtra(EXTRA_MESSAGE_ID, -1L)
         if (messageId == -1L) return
 
-        val pendingResult = goAsync()
+        val pendingResult = goAsync() ?: return
         val repository = SmsRepository(context)
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -48,7 +48,11 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult.finish()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }
