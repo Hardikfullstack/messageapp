@@ -136,11 +136,19 @@ class AfterCallReceiver : BroadcastReceiver() {
         }, 2000L)
     }
 
-    /** Starts loading After Call's native ad (primary native_7 + fallback native_9, in parallel)
-     * as early as the call's RINGING/OFFHOOK state -- not at call-end -- so it has the whole
-     * call's duration as a head start instead of just the ~2s between call-end and AfterCallScreen
-     * actually showing. Safe to call multiple times per call (RINGING, then OFFHOOK): both
-     * NativeAdCache.preload() calls self-guard against a duplicate in-flight/already-cached load. */
+    /** Starts loading After Call's primary native ad (native_7) as early as the call's
+     * RINGING/OFFHOOK state -- not at call-end -- so it has the whole call's duration as a head
+     * start instead of just the ~2s between call-end and AfterCallScreen actually showing. Safe
+     * to call multiple times per call (RINGING, then OFFHOOK): NativeAdCache.preload() self-guards
+     * against a duplicate in-flight/already-cached load.
+     *
+     * The fallback (native_9) is deliberately NOT preloaded here. Loading it in parallel with the
+     * primary regardless of outcome was matching the AdMob console's own numbers to a fault: 769
+     * requests but only 159 impressions in a day (95% match rate) -- almost every fallback load
+     * was firing, filling, and then never being shown because the primary succeeded (the common
+     * case). The reference app's own ad-mediation layer only ever requests a backup once the
+     * primary is confirmed unavailable, never both up front -- native_9 now follows the same
+     * rule, loading fresh (see AfterCallScreen's onFailed) only on the rarer path. */
     private fun preloadAfterCallNativeAds(context: Context) {
         if (!AfterCallState.readEnabled(context)) return
         if (!Settings.canDrawOverlays(context)) return
@@ -149,14 +157,6 @@ class AfterCallReceiver : BroadcastReceiver() {
         if (cachedResult?.google_ads_on_off != "on") return
         if (cachedResult.native_7_on_off == "on") {
             cachedResult.native_7?.takeIf { it.isNotBlank() }?.let {
-                com.message.sms.texting.app.ads.NativeAdCache.preload(appContext, it)
-            }
-        }
-        // Fallback (native_9) preloaded in parallel with the primary, not only after it fails --
-        // matches AfterCallScreen's own primary/fallback failover, which needs native_9 ready to
-        // switch to immediately rather than starting its load only once native_7 has already failed.
-        if (cachedResult.native_9_on_off == "on") {
-            cachedResult.native_9?.takeIf { it.isNotBlank() }?.let {
                 com.message.sms.texting.app.ads.NativeAdCache.preload(appContext, it)
             }
         }

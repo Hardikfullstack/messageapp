@@ -14,9 +14,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.message.sms.texting.app.ads.AppOpenBackgroundReturnTrigger
 import com.message.sms.texting.app.ads.GlobalBackAdManager
@@ -62,7 +59,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enableEdgeToEdge()
-        hideNavigationBar()
         handleIntent(intent)
         setContent {
             // Instantiated here so its init{} fires and fetches the remote ad/app config on
@@ -124,19 +120,6 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         }
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
-            hideNavigationBar()
-        }
-    }
-
-    private fun hideNavigationBar() {
-        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        insetsController.hide(WindowInsetsCompat.Type.navigationBars())
     }
 
     override fun onNewIntent(intent: Intent) {

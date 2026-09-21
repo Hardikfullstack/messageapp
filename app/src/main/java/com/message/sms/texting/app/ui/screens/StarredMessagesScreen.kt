@@ -49,7 +49,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
@@ -96,6 +98,33 @@ fun StarredMessagesScreen(
     val strContentDescScrollToTop = stringResource(R.string.content_desc_scroll_to_top)
     val starredListState = rememberLazyListState()
     val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    // Only the very first ad slot gets a head start; every other slot otherwise only starts
+    // loading the instant it first scrolls into view (visibly takes a few seconds). Looks a bit
+    // ahead of the currently-visible range as the user scrolls and starts loading upcoming slots
+    // into ListAdCache before their own NativeAdView ever composes -- see HomeScreen's identical
+    // pattern, which this matches.
+    if (listNativeAdUnitId != null) {
+        LaunchedEffect(starredRows, listNativeAdUnitId) {
+            snapshotFlow { starredListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+                .collect { lastVisibleIndex ->
+                    val lookaheadEnd = (lastVisibleIndex + 15).coerceAtMost(starredRows.lastIndex)
+                    if (lookaheadEnd < lastVisibleIndex) return@collect
+                    var found = 0
+                    for (rowIndex in lastVisibleIndex..lookaheadEnd) {
+                        if (starredRows.getOrNull(rowIndex) == null) {
+                            // Must match the render side's key exactly -- anchored to the id of the
+                            // message right before this ad slot, not rowIndex.
+                            val anchor = starredRows.getOrNull(rowIndex - 1)?.id
+                            val cacheKey = if (anchor != null) "starred_native_$anchor" else "starred_native_row_$rowIndex"
+                            com.message.sms.texting.app.ads.ListAdCache.preload(context, listNativeAdUnitId, cacheKey)
+                            found++
+                            if (found >= 2) break
+                        }
+                    }
+                }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -156,15 +185,28 @@ fun StarredMessagesScreen(
                 ) {
                     items(
                         count = starredRows.size,
-                        key = { idx -> starredRows[idx]?.id ?: "ad_$idx" }
+                        key = { idx ->
+                            val msg = starredRows[idx]
+                            if (msg != null) msg.id
+                            else {
+                                // Anchored to the id of the message right before this ad slot
+                                // (interleaveAdEvery3 inserts an ad right after an item, not before) --
+                                // a new starred message shifts every row's index but not which message
+                                // a given ad sits behind, keeping this item's identity and its
+                                // ListAdCache key stable instead of orphaning the cached ad each time.
+                                val anchor = starredRows.getOrNull(idx - 1)?.id
+                                if (anchor != null) "ad_$anchor" else "ad_row_$idx"
+                            }
+                        }
                     ) { idx ->
                         val msg = starredRows[idx]
                         if (msg == null) {
+                            val anchor = starredRows.getOrNull(idx - 1)?.id
                             NativeAdView(
                                 adUnitId = listNativeAdUnitId!!,
                                 template = NativeAdTemplate.SMALL,
                                 modifier = Modifier.padding(vertical = 6.dp),
-                                cacheKey = "starred_native_$idx"
+                                cacheKey = if (anchor != null) "starred_native_$anchor" else "starred_native_row_$idx"
                             )
                         } else {
                             StarredMessageItem(

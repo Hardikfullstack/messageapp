@@ -10,19 +10,38 @@ import com.google.android.gms.ads.nativead.NativeAd
 object ListAdCache {
     private const val MAX_ENTRIES = 30
 
+    // Same staleness guidance InterstitialAdManager/AppOpenAdManager/NativeAdCache already follow
+    // -- a row preloaded a couple of scroll-slots ahead but not actually scrolled into view for a
+    // long time (list left open/backgrounded) shouldn't be handed out once it's sat this long.
+    private const val EXPIRY_MS = 60 * 60 * 1000L
+
     private val ads = object : LinkedHashMap<String, NativeAd>(MAX_ENTRIES, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, NativeAd>): Boolean {
             if (size <= MAX_ENTRIES) return false
             eldest.value.destroy()
+            loadTimesMs.remove(eldest.key)
             return true
         }
     }
+    private val loadTimesMs = mutableMapOf<String, Long>()
     private val loadingKeys = mutableSetOf<String>()
 
-    fun get(key: String): NativeAd? = ads[key]
+    /** Returns the cached ad for [key] if one is ready and hasn't expired -- self-clears (and
+     * destroys) a stale entry instead of handing it out, so the row's own NativeAdView falls back
+     * to loading fresh the same way it would if nothing had ever been cached for this key. */
+    fun get(key: String): NativeAd? {
+        val loadedAt = loadTimesMs[key]
+        if (ads.containsKey(key) && loadedAt != null && System.currentTimeMillis() - loadedAt > EXPIRY_MS) {
+            ads.remove(key)?.destroy()
+            loadTimesMs.remove(key)
+            return null
+        }
+        return ads[key]
+    }
 
     fun put(key: String, ad: NativeAd) {
         ads[key] = ad
+        loadTimesMs[key] = System.currentTimeMillis()
     }
 
     /** Loads [adUnitId] ahead of time into slot [key], before that slot's own NativeAdView ever
@@ -30,7 +49,7 @@ object ListAdCache {
      * list, so a slot seen for the very first time doesn't always start its load from scratch
      * right when it scrolls into view. A no-op if [key] is already cached or already loading. */
     fun preload(context: Context, adUnitId: String, key: String) {
-        if (ads.containsKey(key) || key in loadingKeys) return
+        if (get(key) != null || key in loadingKeys) return
         loadingKeys += key
         val adLoader = AdLoader.Builder(context, adUnitId)
             .forNativeAd { ad ->

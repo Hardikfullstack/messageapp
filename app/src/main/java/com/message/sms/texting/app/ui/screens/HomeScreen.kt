@@ -125,9 +125,12 @@ fun HomeScreen(
         onDispose { HomeBannerAdState.clear() }
     }
 
-    // Chat is where almost every Home session heads next (unlike e.g. Settings, which has no
-    // single predictable "came from" screen) â€” give its banner a head start here rather than
-    // waiting for ChatScreen to compose and start loading from scratch.
+    // Chat is where almost every Home session heads next -- give its banner a head start here
+    // rather than waiting for ChatScreen to compose and start loading from scratch. Settings has
+    // no single predictable "came from" screen either, but Home is still by far its most common
+    // entry point (the main nav hub) -- banner_3 was previously never preloaded from anywhere,
+    // which meant it always showed its shimmer/load delay on every visit. Warming it here too
+    // (BannerAdCache's own dedup means this is a harmless no-op if Settings already has one).
     LaunchedEffect(adConfig) {
         val result = adConfig?.result ?: return@LaunchedEffect
         if (adsEnabled && result.banner_2_on_off == "on") {
@@ -138,6 +141,11 @@ fun HomeScreen(
         if (adsEnabled && result.native_8_on_off == "on") {
             result.native_8?.takeIf { it.isNotBlank() }?.let {
                 com.message.sms.texting.app.ads.NativeAdCache.preload(context, it)
+            }
+        }
+        if (adsEnabled && result.banner_3_on_off == "on") {
+            result.banner_3?.takeIf { it.isNotBlank() }?.let {
+                com.message.sms.texting.app.ads.BannerAdCache.preload(context, it)
             }
         }
     }
@@ -800,7 +808,20 @@ fun HomeScreen(
                                     var found = 0
                                     for (rowIndex in lastVisibleIndex..lookaheadEnd) {
                                         if (homeListRows.getOrNull(rowIndex) == null) {
-                                            ListAdCache.preload(context, homeListNativeAdUnitId, "home_native_$rowIndex")
+                                            // Must match the render side's key exactly (see the items()
+                                            // block below) -- anchored to the adjacent real message's
+                                            // id, not rowIndex, so a shifting list doesn't preload into
+                                            // a cache key the render side will never actually look up.
+                                            // homeListRows can briefly lag one recomposition behind
+                                            // messages.itemCount (e.g. right after switching category
+                                            // chips shrinks the paging list) -- bounds-check before
+                                            // peek() rather than indexing past the end and crashing.
+                                            val anchorIdx = homeListRows.getOrNull(rowIndex + 1)
+                                            val anchorId = if (anchorIdx != null && anchorIdx in 0 until messages.itemCount) {
+                                                messages.peek(anchorIdx)?.id
+                                            } else null
+                                            val cacheKey = if (anchorId != null) "home_native_$anchorId" else "home_native_row_$rowIndex"
+                                            ListAdCache.preload(context, homeListNativeAdUnitId, cacheKey)
                                             found++
                                             if (found >= 2) break
                                         }
@@ -853,7 +874,23 @@ fun HomeScreen(
                                 key = { rowIndex ->
                                     val msgIndex = homeListRows.getOrNull(rowIndex)
                                     if (msgIndex == null || msgIndex >= messages.itemCount) {
-                                        "ad_$rowIndex"
+                                        // Anchored to the id of the real message right after this ad
+                                        // slot (see the loop that builds homeListRows -- an ad marker
+                                        // is always immediately followed by a real index), not the raw
+                                        // rowIndex -- a new incoming message shifts every row's index
+                                        // but not which message a given ad sits in front of, so this
+                                        // keeps both this item's identity and its ListAdCache key
+                                        // stable across list-size changes instead of orphaning the
+                                        // slot's cached ad on every new SMS. homeListRows can briefly
+                                        // lag one recomposition behind messages.itemCount (e.g. right
+                                        // after switching category chips shrinks the paging list) --
+                                        // bounds-check before peek() rather than indexing past the end
+                                        // and crashing.
+                                        val anchorIdx = homeListRows.getOrNull(rowIndex + 1)
+                                        val anchorId = if (anchorIdx != null && anchorIdx in 0 until messages.itemCount) {
+                                            messages.peek(anchorIdx)?.id
+                                        } else null
+                                        if (anchorId != null) "ad_$anchorId" else "ad_row_$rowIndex"
                                     } else {
                                         val id = messages.peek(msgIndex)?.id
                                         if (id != null) "${selectedFilter}_$id" else "placeholder_${selectedFilter}_$msgIndex"
@@ -862,13 +899,18 @@ fun HomeScreen(
                             ) { rowIndex ->
                                 val msgIndex = homeListRows.getOrNull(rowIndex)
                                 if (msgIndex == null) {
+                                    val anchorIdx = homeListRows.getOrNull(rowIndex + 1)
+                                    val anchorId = if (anchorIdx != null && anchorIdx in 0 until messages.itemCount) {
+                                        messages.peek(anchorIdx)?.id
+                                    } else null
                                     NativeAdView(
                                         adUnitId = homeListNativeAdUnitId!!,
                                         template = NativeAdTemplate.SMALL,
                                         modifier = Modifier.padding(vertical = 6.dp),
                                         // Survives leaving and returning to Home (e.g. via Chat)
-                                        // without reloading -- see ListAdCache's doc comment.
-                                        cacheKey = "home_native_$rowIndex"
+                                        // without reloading -- see ListAdCache's doc comment. Anchored
+                                        // to anchorId (see the key lambda above) rather than rowIndex.
+                                        cacheKey = if (anchorId != null) "home_native_$anchorId" else "home_native_row_$rowIndex"
                                     )
                                     return@items
                                 }

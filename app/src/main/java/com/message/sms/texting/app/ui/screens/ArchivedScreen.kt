@@ -93,6 +93,39 @@ fun ArchivedScreen(navController: NavController) {
         buildPagingAdRows(messages.itemCount, listNativeAdUnitId != null)
     }
     val archivedListState = rememberLazyListState()
+
+    // Only the very first ad slot gets a head start; every other slot otherwise only starts
+    // loading the instant it first scrolls into view (visibly takes a few seconds). Looks a bit
+    // ahead of the currently-visible range as the user scrolls and starts loading upcoming slots
+    // into ListAdCache before their own NativeAdView ever composes -- see HomeScreen's identical
+    // pattern, which this matches.
+    if (listNativeAdUnitId != null) {
+        LaunchedEffect(archivedRows, listNativeAdUnitId) {
+            snapshotFlow { archivedListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+                .collect { lastVisibleIndex ->
+                    val lookaheadEnd = (lastVisibleIndex + 15).coerceAtMost(archivedRows.lastIndex)
+                    if (lookaheadEnd < lastVisibleIndex) return@collect
+                    var found = 0
+                    for (rowIndex in lastVisibleIndex..lookaheadEnd) {
+                        if (archivedRows.getOrNull(rowIndex) == null) {
+                            // Must match the render side's key exactly -- anchored to the id of the
+                            // real message right before this ad slot, not rowIndex. archivedRows can
+                            // briefly lag one recomposition behind messages.itemCount -- bounds-check
+                            // before indexing rather than indexing past the end and crashing.
+                            val anchorIdx = archivedRows.getOrNull(rowIndex - 1)
+                            val anchorId = if (anchorIdx != null && anchorIdx in 0 until messages.itemCount) {
+                                messages[anchorIdx]?.id
+                            } else null
+                            val cacheKey = if (anchorId != null) "archived_native_$anchorId" else "archived_native_row_$rowIndex"
+                            com.message.sms.texting.app.ads.ListAdCache.preload(context, listNativeAdUnitId, cacheKey)
+                            found++
+                            if (found >= 2) break
+                        }
+                    }
+                }
+        }
+    }
+
     val strContentDescScrollToTop = stringResource(R.string.content_desc_scroll_to_top)
 
     val strSnackbar1GroupUnarchived = stringResource(R.string.snackbar_1_group_unarchived)
@@ -357,16 +390,35 @@ fun ArchivedScreen(navController: NavController) {
                         count = archivedRows.size,
                         key = { rowIdx ->
                             val idx = archivedRows.getOrNull(rowIdx)
-                            if (idx == null || idx >= messages.itemCount) "ad_$rowIdx" else "msg_${messages[idx]?.id ?: idx}"
+                            if (idx == null || idx >= messages.itemCount) {
+                                // Anchored to the id of the real message right before this ad slot
+                                // (buildPagingAdRows inserts an ad marker right after a message, not
+                                // before) -- a new incoming message shifts every row's index but not
+                                // which message a given ad sits behind, so this keeps both this item's
+                                // identity and its ListAdCache key stable across list-size changes
+                                // instead of orphaning the slot's cached ad on every new SMS.
+                                // archivedRows can briefly lag one recomposition behind
+                                // messages.itemCount -- bounds-check before indexing rather than
+                                // indexing past the end and crashing.
+                                val anchorIdx = archivedRows.getOrNull(rowIdx - 1)
+                                val anchorId = if (anchorIdx != null && anchorIdx in 0 until messages.itemCount) {
+                                    messages[anchorIdx]?.id
+                                } else null
+                                if (anchorId != null) "ad_$anchorId" else "ad_row_$rowIdx"
+                            } else "msg_${messages[idx]?.id ?: idx}"
                         }
                     ) { rowIdx ->
                         val index = archivedRows.getOrNull(rowIdx)
                         if (index == null) {
+                            val anchorIdx = archivedRows.getOrNull(rowIdx - 1)
+                            val anchorId = if (anchorIdx != null && anchorIdx in 0 until messages.itemCount) {
+                                messages[anchorIdx]?.id
+                            } else null
                             NativeAdView(
                                 adUnitId = listNativeAdUnitId!!,
                                 template = NativeAdTemplate.SMALL,
                                 modifier = Modifier.padding(vertical = 6.dp),
-                                cacheKey = "archived_native_$rowIdx"
+                                cacheKey = if (anchorId != null) "archived_native_$anchorId" else "archived_native_row_$rowIdx"
                             )
                             return@items
                         }

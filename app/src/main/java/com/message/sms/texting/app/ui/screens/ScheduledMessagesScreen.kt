@@ -87,6 +87,33 @@ fun ScheduledMessagesScreen(
         scheduledMessages.interleaveAdEvery3(listNativeAdUnitId != null)
     }
 
+    // Only the very first ad slot gets a head start; every other slot otherwise only starts
+    // loading the instant it first scrolls into view (visibly takes a few seconds). Looks a bit
+    // ahead of the currently-visible range as the user scrolls and starts loading upcoming slots
+    // into ListAdCache before their own NativeAdView ever composes -- see HomeScreen's identical
+    // pattern, which this matches.
+    if (listNativeAdUnitId != null) {
+        LaunchedEffect(scheduledRows, listNativeAdUnitId) {
+            snapshotFlow { scheduledListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+                .collect { lastVisibleIndex ->
+                    val lookaheadEnd = (lastVisibleIndex + 15).coerceAtMost(scheduledRows.lastIndex)
+                    if (lookaheadEnd < lastVisibleIndex) return@collect
+                    var found = 0
+                    for (rowIndex in lastVisibleIndex..lookaheadEnd) {
+                        if (scheduledRows.getOrNull(rowIndex) == null) {
+                            // Must match the render side's key exactly -- anchored to the id of the
+                            // message right before this ad slot, not rowIndex.
+                            val anchor = scheduledRows.getOrNull(rowIndex - 1)?.id
+                            val cacheKey = if (anchor != null) "scheduled_native_$anchor" else "scheduled_native_row_$rowIndex"
+                            com.message.sms.texting.app.ads.ListAdCache.preload(context, listNativeAdUnitId, cacheKey)
+                            found++
+                            if (found >= 2) break
+                        }
+                    }
+                }
+        }
+    }
+
     LaunchedEffect(scheduledMessages) {
         if (showOptionsDialog != null && scheduledMessages.none { it.id == showOptionsDialog?.id }) {
             showOptionsDialog = null
@@ -191,15 +218,28 @@ fun ScheduledMessagesScreen(
             ) {
                 items(
                     count = scheduledRows.size,
-                    key = { idx -> scheduledRows[idx]?.id ?: "ad_$idx" }
+                    key = { idx ->
+                        val msg = scheduledRows[idx]
+                        if (msg != null) msg.id
+                        else {
+                            // Anchored to the id of the message right before this ad slot
+                            // (interleaveAdEvery3 inserts an ad right after an item, not before) -- a
+                            // new scheduled message shifts every row's index but not which message a
+                            // given ad sits behind, keeping this item's identity and its ListAdCache
+                            // key stable instead of orphaning the cached ad each time.
+                            val anchor = scheduledRows.getOrNull(idx - 1)?.id
+                            if (anchor != null) "ad_$anchor" else "ad_row_$idx"
+                        }
+                    }
                 ) { idx ->
                     val msg = scheduledRows[idx]
                     if (msg == null) {
+                        val anchor = scheduledRows.getOrNull(idx - 1)?.id
                         NativeAdView(
                             adUnitId = listNativeAdUnitId!!,
                             template = NativeAdTemplate.SMALL,
                             modifier = Modifier.padding(vertical = 6.dp),
-                            cacheKey = "scheduled_native_$idx"
+                            cacheKey = if (anchor != null) "scheduled_native_$anchor" else "scheduled_native_row_$idx"
                         )
                     } else {
                         ScheduledMessageItem(

@@ -16,16 +16,24 @@ import com.message.sms.texting.app.utils.AnalyticsManager
  * an optional head start, not a requirement.
  */
 object NativeAdCache {
+    // Same staleness guidance InterstitialAdManager/AppOpenAdManager already follow for their
+    // formats -- Google doesn't want a loaded-but-unshown ad handed to a view arbitrarily long
+    // after it was requested. Without this, a preloaded-but-never-navigated-to slot (e.g. the
+    // Language screen's ad if the user lingers on Permissions) could sit cached indefinitely.
+    private const val EXPIRY_MS = 60 * 60 * 1000L
+
     private val ads = mutableMapOf<String, NativeAd>()
+    private val loadTimesMs = mutableMapOf<String, Long>()
     private val loadingIds = mutableSetOf<String>()
 
     fun preload(context: Context, adUnitId: String) {
-        if (adUnitId in loadingIds || ads.containsKey(adUnitId)) return
+        if (adUnitId in loadingIds || isCached(adUnitId)) return
         loadingIds += adUnitId
         AnalyticsManager.logAdEvent("native", adUnitId, "request")
         val adLoader = AdLoader.Builder(context, adUnitId)
             .forNativeAd { ad ->
                 ads[adUnitId] = ad
+                loadTimesMs[adUnitId] = System.currentTimeMillis()
                 loadingIds -= adUnitId
                 AnalyticsManager.logAdEvent("native", adUnitId, "loaded")
             }
@@ -39,7 +47,23 @@ object NativeAdCache {
         adLoader.loadAd(AdRequest.Builder().build())
     }
 
-    /** Hands over the cached ad for [adUnitId] if one finished loading â€” consumes it (won't be
-     * returned again), since a [NativeAd] can only ever be bound to one view. */
-    fun take(adUnitId: String): NativeAd? = ads.remove(adUnitId)
+    /** Self-clears (and destroys) an expired entry so a stale ad is never handed out, and so the
+     * next [preload] call actually fires instead of being blocked by it forever. */
+    private fun isCached(adUnitId: String): Boolean {
+        val loadedAt = loadTimesMs[adUnitId]
+        if (ads.containsKey(adUnitId) && loadedAt != null && System.currentTimeMillis() - loadedAt > EXPIRY_MS) {
+            ads.remove(adUnitId)?.destroy()
+            loadTimesMs.remove(adUnitId)
+        }
+        return ads.containsKey(adUnitId)
+    }
+
+    /** Hands over the cached ad for [adUnitId] if one finished loading and hasn't expired â€”
+     * consumes it (won't be returned again), since a [NativeAd] can only ever be bound to one
+     * view. */
+    fun take(adUnitId: String): NativeAd? {
+        if (!isCached(adUnitId)) return null
+        loadTimesMs.remove(adUnitId)
+        return ads.remove(adUnitId)
+    }
 }

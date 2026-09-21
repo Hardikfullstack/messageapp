@@ -110,6 +110,33 @@ fun BlockedMessagesScreen(navController: NavController) {
     val strContentDescScrollToTop = stringResource(R.string.content_desc_scroll_to_top)
     val blockedListState = rememberLazyListState()
 
+    // Only the very first ad slot gets a head start; every other slot otherwise only starts
+    // loading the instant it first scrolls into view (visibly takes a few seconds). Looks a bit
+    // ahead of the currently-visible range as the user scrolls and starts loading upcoming slots
+    // into ListAdCache before their own NativeAdView ever composes -- see HomeScreen's identical
+    // pattern, which this matches.
+    if (listNativeAdUnitId != null) {
+        LaunchedEffect(blockedRows, listNativeAdUnitId) {
+            snapshotFlow { blockedListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+                .collect { lastVisibleIndex ->
+                    val lookaheadEnd = (lastVisibleIndex + 15).coerceAtMost(blockedRows.lastIndex)
+                    if (lookaheadEnd < lastVisibleIndex) return@collect
+                    var found = 0
+                    for (rowIndex in lastVisibleIndex..lookaheadEnd) {
+                        if (blockedRows.getOrNull(rowIndex) == null) {
+                            // Must match the render side's key exactly -- anchored to the address of
+                            // the contact right before this ad slot, not rowIndex.
+                            val anchor = blockedRows.getOrNull(rowIndex - 1)?.address
+                            val cacheKey = if (anchor != null) "blocked_native_$anchor" else "blocked_native_row_$rowIndex"
+                            com.message.sms.texting.app.ads.ListAdCache.preload(context, listNativeAdUnitId, cacheKey)
+                            found++
+                            if (found >= 2) break
+                        }
+                    }
+                }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -239,15 +266,28 @@ fun BlockedMessagesScreen(navController: NavController) {
                 LazyColumn(state = blockedListState, modifier = Modifier.weight(1f)) {
                     items(
                         count = blockedRows.size,
-                        key = { idx -> blockedRows[idx]?.address ?: "ad_$idx" }
+                        key = { idx ->
+                            val contact = blockedRows[idx]
+                            if (contact != null) contact.address
+                            else {
+                                // Anchored to the address of the contact right before this ad slot
+                                // (interleaveAdEvery3 inserts an ad right after an item, not before) --
+                                // a new blocked contact shifts every row's index but not which contact
+                                // a given ad sits behind, keeping this item's identity and its
+                                // ListAdCache key stable instead of orphaning the cached ad each time.
+                                val anchor = blockedRows.getOrNull(idx - 1)?.address
+                                if (anchor != null) "ad_$anchor" else "ad_row_$idx"
+                            }
+                        }
                     ) { idx ->
                       val contact = blockedRows[idx]
                       if (contact == null) {
+                        val anchor = blockedRows.getOrNull(idx - 1)?.address
                         NativeAdView(
                             adUnitId = listNativeAdUnitId!!,
                             template = NativeAdTemplate.SMALL,
                             modifier = Modifier.padding(vertical = 6.dp),
-                            cacheKey = "blocked_native_$idx"
+                            cacheKey = if (anchor != null) "blocked_native_$anchor" else "blocked_native_row_$idx"
                         )
                       } else {
                         val isSelected = selectedContacts.contains(contact)

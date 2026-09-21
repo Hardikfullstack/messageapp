@@ -42,6 +42,18 @@ object AppOpenBackgroundReturnTrigger : Application.ActivityLifecycleCallbacks, 
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
 
+    // Matches the reference app's own App Open pattern: refresh on every background transition
+    // rather than only right after a show. Without this, an ad that expires while the app sits
+    // backgrounded (EXPIRY_MS in AppOpenAdManager) has no preload() call left to fix it -- the
+    // next onStart's waitUntilAdReady() would poll a manager that nothing is loading into, and
+    // just time out. preload() itself is a no-op if a non-expired ad is already cached/loading,
+    // so calling it on every pause never wastes a request.
+    override fun onPause(owner: LifecycleOwner) {
+        val unitId = adUnitId ?: return
+        val activity = currentActivity ?: return
+        AppOpenAdManager.preload(activity.applicationContext, unitId)
+    }
+
     override fun onStart(owner: LifecycleOwner) {
         if (isColdStart) {
             // The app's own first launch â€” not a "returned from background" moment.

@@ -2,11 +2,14 @@
 
 import android.content.Context
 import android.graphics.PixelFormat
+import android.os.Build
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import com.message.sms.texting.app.ui.screens.AfterCallOverlayRoot
@@ -38,6 +41,7 @@ private class KeyInterceptingFrameLayout(context: Context, private val onBack: (
 object AfterCallOverlayManager {
     private var rootView: View? = null
     private var lifecycleOwner: OverlayLifecycleOwner? = null
+    private var backInvokedCallback: OnBackInvokedCallback? = null
 
     // Reactive so show() doesn't have to wait on the contact-name lookup before first paint â€”
     // it's shown as soon as the caller has the CallLog data, and this gets filled in shortly
@@ -95,6 +99,21 @@ object AfterCallOverlayManager {
             windowManager.addView(container, layoutParams)
             rootView = container
             lifecycleOwner = owner
+            // KeyInterceptingFrameLayout's dispatchKeyEvent(KEYCODE_BACK) above only ever fires for
+            // a physical/3-button back press -- gesture navigation (the default on OnePlus/OxygenOS
+            // and increasingly elsewhere) doesn't dispatch a KeyEvent at all, it goes through this
+            // separate Predictive Back API instead. Without also registering here, swiping back
+            // while this overlay is showing does nothing on gesture-nav devices. Each top-level
+            // window (even one added via raw WindowManager, not just an Activity's) gets its own
+            // dispatcher once attached, which is why this is registered after addView succeeds.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val callback = OnBackInvokedCallback { owner.onBackPressedDispatcher.onBackPressed() }
+                container.findOnBackInvokedDispatcher()?.registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    callback
+                )
+                backInvokedCallback = callback
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to add overlay view", e)
         }
@@ -108,6 +127,10 @@ object AfterCallOverlayManager {
     fun hide() {
         val view = rootView ?: return
         rootView = null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            backInvokedCallback?.let { view.findOnBackInvokedDispatcher()?.unregisterOnBackInvokedCallback(it) }
+        }
+        backInvokedCallback = null
         try {
             val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
             windowManager?.removeView(view)
