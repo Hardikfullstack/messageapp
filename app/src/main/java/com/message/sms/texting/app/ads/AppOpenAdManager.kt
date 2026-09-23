@@ -28,25 +28,31 @@ object AppOpenAdManager {
     fun preload(context: Context, adUnitId: String) {
         if (isLoading || isReady()) return
         isLoading = true
-        AnalyticsManager.logAdEvent("app_open", adUnitId, "request")
-        AppOpenAd.load(
-            context,
-            adUnitId,
-            AdRequest.Builder().build(),
-            object : AppOpenAd.AppOpenAdLoadCallback() {
-                override fun onAdLoaded(ad: AppOpenAd) {
-                    appOpenAd = ad
-                    loadTimeMs = System.currentTimeMillis()
-                    isLoading = false
-                    AnalyticsManager.logAdEvent("app_open", adUnitId, "loaded")
-                }
+        // Deferred a frame -- see NativeAdCache.preload's matching comment: this fires alongside
+        // several other placements' preload() calls during Splash's cold-start burst, and each
+        // one costs enough time starting the request to add up to an ANR if done synchronously
+        // in one go.
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            AnalyticsManager.logAdEvent("app_open", adUnitId, "request")
+            AppOpenAd.load(
+                context,
+                adUnitId,
+                AdRequest.Builder().build(),
+                object : AppOpenAd.AppOpenAdLoadCallback() {
+                    override fun onAdLoaded(ad: AppOpenAd) {
+                        appOpenAd = ad
+                        loadTimeMs = System.currentTimeMillis()
+                        isLoading = false
+                        AnalyticsManager.logAdEvent("app_open", adUnitId, "loaded")
+                    }
 
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    isLoading = false
-                    AnalyticsManager.logAdEvent("app_open", adUnitId, "failed_to_load")
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        isLoading = false
+                        AnalyticsManager.logAdEvent("app_open", adUnitId, "failed_to_load")
+                    }
                 }
-            }
-        )
+            )
+        }
     }
 
     /** Self-clears an expired ad so the next [preload] call (isLoading/isReady both now false)

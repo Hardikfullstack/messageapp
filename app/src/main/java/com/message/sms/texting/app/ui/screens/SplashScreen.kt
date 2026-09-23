@@ -112,10 +112,20 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
     }
 
     LaunchedEffect(Unit) {
-        val window = (view.context as? Activity)?.window
+        val activity = view.context as? Activity
+        val window = activity?.window
         if (window != null) {
             val insetsController = WindowCompat.getInsetsController(window, view)
-            insetsController.hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
+            // Gesture navigation devices skip hiding the nav bar (status bar hiding is unaffected
+            // and stays unconditional) -- see MainActivity's matching comment: hiding the nav bar
+            // has been observed to also disable the OS's own edge-swipe back gesture entirely on
+            // some OEM skins (OxygenOS/ColorOS).
+            val typesToHide = if (com.message.sms.texting.app.utils.isGestureNavigationEnabled(activity)) {
+                WindowInsetsCompat.Type.statusBars()
+            } else {
+                WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars()
+            }
+            insetsController.hide(typesToHide)
             insetsController.systemBarsBehavior =
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }

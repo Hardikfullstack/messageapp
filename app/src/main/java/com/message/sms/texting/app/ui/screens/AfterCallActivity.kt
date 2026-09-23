@@ -123,13 +123,19 @@ class AfterCallActivity : AppCompatActivity() {
             )
         }
 
-        // Bottom nav bar stays hidden on this screen â€” a swipe from the edge can still reveal it
-        // transiently (BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE), but it auto-hides again afterward.
+        // Bottom nav bar stays hidden on this screen on 3-button navigation devices -- a swipe
+        // from the edge can still reveal it transiently (BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE),
+        // but it auto-hides again afterward. On GESTURE navigation devices, actually hiding the
+        // bar has been observed to also disable the OS's own edge-swipe back gesture entirely on
+        // some OEM skins (OxygenOS/ColorOS) -- see MainActivity's matching comment -- so gesture-
+        // nav devices skip the explicit hide and keep working back-swipes.
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        insetsController.hide(WindowInsetsCompat.Type.navigationBars())
-        insetsController.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (!com.message.sms.texting.app.utils.isGestureNavigationEnabled(this)) {
+            insetsController.hide(WindowInsetsCompat.Type.navigationBars())
+            insetsController.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
 
         if (!updateFromIntent(intent)) return
 
@@ -215,7 +221,7 @@ class AfterCallActivity : AppCompatActivity() {
     // bars â€” re-hide the nav bar each time this window regains focus so it doesn't creep back.
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
+        if (hasFocus && !com.message.sms.texting.app.utils.isGestureNavigationEnabled(this)) {
             WindowCompat.getInsetsController(window, window.decorView)
                 .hide(WindowInsetsCompat.Type.navigationBars())
         }

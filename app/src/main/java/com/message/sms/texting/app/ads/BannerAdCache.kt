@@ -31,32 +31,37 @@ object BannerAdCache {
     fun preload(context: Context, adUnitId: String) {
         if (adUnitId in loadingIds || isCached(adUnitId)) return
         loadingIds += adUnitId
+        // Deferred a frame -- see NativeAdCache.preload's matching comment: several of these
+        // firing back-to-back on the main thread during a cold start (Splash + Home/DefaultSms
+        // both trigger some within the same startup window) can each cost enough time building
+        // the AdView/starting the request to add up to an ANR if done synchronously in one go.
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            val displayMetrics = context.resources.displayMetrics
+            val screenWidthDp = (displayMetrics.widthPixels / displayMetrics.density).toInt()
+            val adSize = AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, screenWidthDp)
 
-        val displayMetrics = context.resources.displayMetrics
-        val screenWidthDp = (displayMetrics.widthPixels / displayMetrics.density).toInt()
-        val adSize = AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, screenWidthDp)
+            val adView = AdView(context.applicationContext).apply {
+                this.adUnitId = adUnitId
+                setAdSize(adSize)
+                adListener = object : AdListener() {
+                    override fun onAdLoaded() {
+                        loadingIds -= adUnitId
+                        AnalyticsManager.logAdEvent("banner", adUnitId, "loaded")
+                    }
 
-        val adView = AdView(context.applicationContext).apply {
-            this.adUnitId = adUnitId
-            setAdSize(adSize)
-            adListener = object : AdListener() {
-                override fun onAdLoaded() {
-                    loadingIds -= adUnitId
-                    AnalyticsManager.logAdEvent("banner", adUnitId, "loaded")
-                }
-
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    adViews.remove(adUnitId)
-                    loadingIds -= adUnitId
-                    failedIds += adUnitId
-                    AnalyticsManager.logAdEvent("banner", adUnitId, "failed_to_load")
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        adViews.remove(adUnitId)
+                        loadingIds -= adUnitId
+                        failedIds += adUnitId
+                        AnalyticsManager.logAdEvent("banner", adUnitId, "failed_to_load")
+                    }
                 }
             }
+            adViews[adUnitId] = adView
+            loadTimesMs[adUnitId] = System.currentTimeMillis()
+            AnalyticsManager.logAdEvent("banner", adUnitId, "request")
+            adView.loadAd(AdRequest.Builder().build())
         }
-        adViews[adUnitId] = adView
-        loadTimesMs[adUnitId] = System.currentTimeMillis()
-        AnalyticsManager.logAdEvent("banner", adUnitId, "request")
-        adView.loadAd(AdRequest.Builder().build())
     }
 
     /** Self-clears (and destroys) an expired entry so a stale banner is never handed out, and so

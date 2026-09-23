@@ -33,25 +33,30 @@ object InterstitialAdManager {
     fun preload(context: Context, adUnitId: String) {
         if (adUnitId in loadingIds || isReady(adUnitId)) return
         loadingIds += adUnitId
-        AnalyticsManager.logAdEvent("interstitial", adUnitId, "request")
-        InterstitialAd.load(
-            context,
-            adUnitId,
-            AdRequest.Builder().build(),
-            object : InterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: InterstitialAd) {
-                    ads[adUnitId] = ad
-                    loadTimesMs[adUnitId] = System.currentTimeMillis()
-                    loadingIds -= adUnitId
-                    AnalyticsManager.logAdEvent("interstitial", adUnitId, "loaded")
-                }
+        // Deferred a frame -- see NativeAdCache.preload's matching comment: several of these
+        // firing back-to-back on the main thread during a cold start can each cost enough time
+        // starting the request to add up to an ANR if done synchronously in one go.
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            AnalyticsManager.logAdEvent("interstitial", adUnitId, "request")
+            InterstitialAd.load(
+                context,
+                adUnitId,
+                AdRequest.Builder().build(),
+                object : InterstitialAdLoadCallback() {
+                    override fun onAdLoaded(ad: InterstitialAd) {
+                        ads[adUnitId] = ad
+                        loadTimesMs[adUnitId] = System.currentTimeMillis()
+                        loadingIds -= adUnitId
+                        AnalyticsManager.logAdEvent("interstitial", adUnitId, "loaded")
+                    }
 
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    loadingIds -= adUnitId
-                    AnalyticsManager.logAdEvent("interstitial", adUnitId, "failed_to_load")
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        loadingIds -= adUnitId
+                        AnalyticsManager.logAdEvent("interstitial", adUnitId, "failed_to_load")
+                    }
                 }
-            }
-        )
+            )
+        }
     }
 
     /** Self-clears an expired entry so the next [preload] call actually fires instead of being

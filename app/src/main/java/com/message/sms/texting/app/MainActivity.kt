@@ -14,6 +14,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.message.sms.texting.app.ads.AppOpenBackgroundReturnTrigger
 import com.message.sms.texting.app.ads.GlobalBackAdManager
@@ -66,6 +69,18 @@ class MainActivity : AppCompatActivity() {
             val appConfigViewModel: AppConfigViewModel = viewModel()
             val adConfig by appConfigViewModel.appResponse.collectAsState()
             val canRequestAds by UmpConsentManager.canRequestAds.collectAsState()
+
+            val insetsController = androidx.compose.runtime.remember {
+                WindowCompat.getInsetsController(window, window.decorView)
+            }
+
+            LaunchedEffect(Unit) {
+                if (!com.message.sms.texting.app.utils.isGestureNavigationEnabled(this@MainActivity)) {
+                    insetsController.systemBarsBehavior =
+                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    insetsController.hide(WindowInsetsCompat.Type.navigationBars())
+                }
+            }
 
             // Gathered once, as early as possible â€” the very first ad request of the session
             // (right below, and SplashScreen's own preloads) waits on canRequestAds instead of

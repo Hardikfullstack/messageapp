@@ -29,22 +29,31 @@ object NativeAdCache {
     fun preload(context: Context, adUnitId: String) {
         if (adUnitId in loadingIds || isCached(adUnitId)) return
         loadingIds += adUnitId
-        AnalyticsManager.logAdEvent("native", adUnitId, "request")
-        val adLoader = AdLoader.Builder(context, adUnitId)
-            .forNativeAd { ad ->
-                ads[adUnitId] = ad
-                loadTimesMs[adUnitId] = System.currentTimeMillis()
-                loadingIds -= adUnitId
-                AnalyticsManager.logAdEvent("native", adUnitId, "loaded")
-            }
-            .withAdListener(object : AdListener() {
-                override fun onAdFailedToLoad(error: LoadAdError) {
+        // Deferred a frame (Handler.post) instead of building/loading inline -- several preload()
+        // calls firing back-to-back on the main thread during a cold start (Splash + MainActivity
+        // both trigger some within the same startup window) can each cost enough time building the
+        // AdLoader and starting the request (class loading, Play Services binder setup, especially
+        // while MobileAds.initialize() is still running on its own background thread) that doing
+        // them all synchronously in one go was slow enough to trip Android's ANR watchdog.
+        // Posting lets each one run on its own message-queue iteration instead of stacking up.
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            AnalyticsManager.logAdEvent("native", adUnitId, "request")
+            val adLoader = AdLoader.Builder(context, adUnitId)
+                .forNativeAd { ad ->
+                    ads[adUnitId] = ad
+                    loadTimesMs[adUnitId] = System.currentTimeMillis()
                     loadingIds -= adUnitId
-                    AnalyticsManager.logAdEvent("native", adUnitId, "failed_to_load")
+                    AnalyticsManager.logAdEvent("native", adUnitId, "loaded")
                 }
-            })
-            .build()
-        adLoader.loadAd(AdRequest.Builder().build())
+                .withAdListener(object : AdListener() {
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        loadingIds -= adUnitId
+                        AnalyticsManager.logAdEvent("native", adUnitId, "failed_to_load")
+                    }
+                })
+                .build()
+            adLoader.loadAd(AdRequest.Builder().build())
+        }
     }
 
     /** Self-clears (and destroys) an expired entry so a stale ad is never handed out, and so the

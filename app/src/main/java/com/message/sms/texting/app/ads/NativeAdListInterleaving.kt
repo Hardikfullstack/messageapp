@@ -51,18 +51,24 @@ object ListAdCache {
     fun preload(context: Context, adUnitId: String, key: String) {
         if (get(key) != null || key in loadingKeys) return
         loadingKeys += key
-        val adLoader = AdLoader.Builder(context, adUnitId)
-            .forNativeAd { ad ->
-                loadingKeys -= key
-                put(key, ad)
-            }
-            .withAdListener(object : AdListener() {
-                override fun onAdFailedToLoad(error: LoadAdError) {
+        // Deferred a frame -- see NativeAdCache.preload's matching comment: several of these
+        // firing back-to-back on the main thread (e.g. the 2-slots-ahead scroll preload) can each
+        // cost enough time building the AdLoader/starting the request to add up to an ANR if done
+        // synchronously in one go.
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            val adLoader = AdLoader.Builder(context, adUnitId)
+                .forNativeAd { ad ->
                     loadingKeys -= key
+                    put(key, ad)
                 }
-            })
-            .build()
-        adLoader.loadAd(AdRequest.Builder().build())
+                .withAdListener(object : AdListener() {
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        loadingKeys -= key
+                    }
+                })
+                .build()
+            adLoader.loadAd(AdRequest.Builder().build())
+        }
     }
 }
 

@@ -140,13 +140,19 @@ fun OnboardingScreen(
         }
     }
     LaunchedEffect(Unit) {
-        val window = (view.context as? Activity)?.window
+        val activity = view.context as? Activity
+        val window = activity?.window
         if (window != null) {
             val insetsController = WindowCompat.getInsetsController(window, view)
             insetsController.show(WindowInsetsCompat.Type.statusBars())
-            insetsController.hide(WindowInsetsCompat.Type.navigationBars())
-            insetsController.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            // Gesture navigation devices skip hiding the nav bar -- see MainActivity's matching
+            // comment: doing so has been observed to also disable the OS's own edge-swipe back
+            // gesture entirely on some OEM skins (OxygenOS/ColorOS).
+            if (!com.message.sms.texting.app.utils.isGestureNavigationEnabled(activity)) {
+                insetsController.hide(WindowInsetsCompat.Type.navigationBars())
+                insetsController.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
         }
     }
 
