@@ -414,8 +414,15 @@
     <string name="feature_message_scheduling_desc">Schedule messages to be sent automatically at your preferred time.</string>
     <string name="feature_after_call_title">Phone Call</string>
     <string name="feature_after_call_desc">Allow call access so we can show message actions right after your call ends.</string>
+    <string name="after_call_promo_title">Quick Reply After Calls</string>
+    <string name="after_call_promo_desc">Enable permission to enjoy quick reply after your calls.</string>
+    <string name="after_call_promo_enable">Allow</string>
+    <string name="content_desc_dismiss">Dismiss</string>
+    <string name="after_call_autostart_popup_title">Enable background auto-start</string>
+    <string name="after_call_autostart_popup_desc">Without this, quick reply after calls may not work reliably on your phone. Turn on auto-start for this app.</string>
+    <string name="after_call_autostart_toast">Find %1$s in the list and turn on Auto-start</string>
     <string name="action_agree_continue">Agree &amp; Continue</string>
-    <string name="privacy_agree_prefix">By continuing, you agree to our </string>
+    <string name="privacy_agree_prefix">By setting as default, you agree to our </string>
     <string name="privacy_policy_link_text">Privacy Policy.</string>
     <string name="permission_needed_title">Permission Needed</string>
     <string name="permission_needed_desc">This app requires %1$s permissions to function properly. Since it was denied, please enable it manually:</string>

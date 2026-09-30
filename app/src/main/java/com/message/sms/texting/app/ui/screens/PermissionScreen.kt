@@ -273,15 +273,18 @@ fun PermissionScreen(
                 }
 
                 PermissionStep.ONEPLUS_AUTOSTART -> {
-                    // Tries each known component in turn (old OxygenOS, then newer ColorOS-based
-                    // OxygenOS 12+/Oppo) â€” the first one that resolves is launched via the
-                    // launcher so its return still advances the step; falls back to the app's own
-                    // Settings page if none of them exist on this device/OS version.
+                    // Tries each known component in turn (old OxygenOS, newer ColorOS-based
+                    // OxygenOS 12+/Oppo/Realme, then Vivo/iQOO) â€” the first one that resolves is
+                    // launched via the launcher so its return still advances the step; falls back
+                    // to the app's own Settings page if none of them exist on this device/OS
+                    // version.
                     val candidates = listOf(
                         "com.oneplus.security" to "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity",
                         "com.coloros.safecenter" to "com.coloros.safecenter.startupapp.StartupAppListActivity",
                         "com.coloros.bootreg" to "com.coloros.bootreg.activity.MainActivity",
-                        "com.oplus.safecenter" to "com.oplus.safecenter.startupapp.StartupAppListActivity"
+                        "com.oplus.safecenter" to "com.oplus.safecenter.startupapp.StartupAppListActivity",
+                        "com.vivo.permissionmanager" to "com.vivo.permissionmanager.activity.BgStartUpManagerActivity",
+                        "com.iqoo.secure" to "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"
                     )
                     var launched = false
                     for ((pkg, cls) in candidates) {

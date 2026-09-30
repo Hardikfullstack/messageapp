@@ -75,18 +75,32 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 fun DashboardScreen(parentNavController: NavController) {
     val context = LocalContext.current
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = {}
-    )
+    fun hasNotificationPermission(): Boolean {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+    }
 
+    var showNotificationPermissionDialog by remember { mutableStateOf(false) }
+    var isWaitingForNotificationSettings by remember { mutableStateOf(false) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        showNotificationPermissionDialog = !granted
+    }
+
+    // Checked once, at Dashboard's first landing only -- NOT re-triggered on every resume. The
+    // system permission dialog itself causes this Activity to pause/resume as it shows/dismisses,
+    // so wiring launch() to an ON_RESUME observer re-fires it while the previous call is still in
+    // flight (ActivityResultLauncher throws if launch() is called again before a result is
+    // delivered), which showed up as the permission screen flashing repeatedly and the app
+    // crashing. Revoking a permission later while the app is just backgrounded (not killed) won't
+    // be caught until the next cold start -- an accepted tradeoff to avoid that crash.
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permissionStatus =
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-            if (permissionStatus != PackageManager.PERMISSION_GRANTED) {
-                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
+        if (!hasNotificationPermission()) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
@@ -139,6 +153,9 @@ fun DashboardScreen(parentNavController: NavController) {
         }
     }
 
+    // Only re-checks (never re-launches a request) on resume, and only when we're specifically
+    // expecting a return from our own settings-redirect dialog's "Open Settings" -- not a blanket
+    // check on every resume, for the same reason the notification flow above avoids it.
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -151,6 +168,10 @@ fun DashboardScreen(parentNavController: NavController) {
                 if (!stillMissing) {
                     syncSmsNow()
                 }
+            }
+            if (event == Lifecycle.Event.ON_RESUME && isWaitingForNotificationSettings) {
+                isWaitingForNotificationSettings = false
+                showNotificationPermissionDialog = !hasNotificationPermission()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -171,6 +192,22 @@ fun DashboardScreen(parentNavController: NavController) {
             },
             permissionDescLabel = stringResource(R.string.permission_label_sms),
             permissionStepLabel = stringResource(R.string.permission_step_label_sms)
+        )
+    }
+
+    if (showNotificationPermissionDialog) {
+        PermissionSettingsDialog(
+            onDismiss = { showNotificationPermissionDialog = false },
+            onOpenSettings = {
+                isWaitingForNotificationSettings = true
+                val intent =
+                    android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = android.net.Uri.fromParts("package", context.packageName, null)
+                context.startActivity(intent)
+            },
+            permissionDescLabel = stringResource(R.string.permission_label_notification),
+            permissionStepLabel = stringResource(R.string.permission_step_label_notification),
+            showCloseIcon = true
         )
     }
 

@@ -61,6 +61,9 @@ class MmsReceiver : BroadcastReceiver() {
                 )
 
                 if (!isBlocked) {
+                    com.message.sms.texting.app.utils.AnalyticsManager.logEventWithAction(
+                        "message_received", "MmsReceiver", "mms"
+                    )
                     var contactName: String? = null
                     val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(address))
                     context.contentResolver.query(

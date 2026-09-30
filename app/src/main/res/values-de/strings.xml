@@ -381,8 +381,15 @@
     <string name="feature_message_scheduling_desc">Plane Nachrichten so, dass sie automatisch zur gewünschten Zeit gesendet werden.</string>
     <string name="feature_after_call_title">Telefonanruf</string>
     <string name="feature_after_call_desc">Erlauben Sie den Anrufzugriff, damit wir direkt nach Beendigung Ihres Anrufs Nachrichtenaktionen anzeigen können.</string>
+    <string name="after_call_promo_title">Schnellantwort nach Anrufen</string>
+    <string name="after_call_promo_desc">Aktiviere die Berechtigung, um Schnellantworten nach deinen Anrufen zu nutzen.</string>
+    <string name="after_call_promo_enable">Zulassen</string>
+    <string name="content_desc_dismiss">Schließen</string>
+    <string name="after_call_autostart_popup_title">Autostart im Hintergrund aktivieren</string>
+    <string name="after_call_autostart_popup_desc">Ohne dies funktioniert die Schnellantwort nach Anrufen auf deinem Handy möglicherweise nicht zuverlässig. Aktiviere den Autostart für diese App.</string>
+    <string name="after_call_autostart_toast">Finde %1$s in der Liste und aktiviere den Autostart</string>
     <string name="action_agree_continue">Zustimmen &amp; fortfahren</string>
-    <string name="privacy_agree_prefix">Indem du fortfährst, stimmst du unserer </string>
+    <string name="privacy_agree_prefix">Indem du sie als Standard festlegst, stimmst du unserer </string>
     <string name="privacy_policy_link_text">Datenschutzrichtlinie zu.</string>
     <string name="permission_needed_title">Berechtigung erforderlich</string>
     <string name="permission_needed_desc">Diese App benötigt %1$s-Berechtigungen, um ordnungsgemäß zu funktionieren. Da sie verweigert wurde, aktiviere sie bitte manuell:</string>

@@ -79,6 +79,9 @@ class SmsReceiver : BroadcastReceiver() {
 
                                 // Only show notification if NOT blocked
                                 if (!isBlocked) {
+                                    com.message.sms.texting.app.utils.AnalyticsManager.logEventWithAction(
+                                        "message_received", "SmsReceiver", "sms"
+                                    )
                                     var contactName: String? = null
                                     val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(address))
                                     val projection = arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME)

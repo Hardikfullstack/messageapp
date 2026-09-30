@@ -1,37 +1,22 @@
 package com.message.sms.texting.app.utils
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Build
-import android.provider.Settings
 import android.provider.Telephony
-import androidx.core.content.ContextCompat
 
-/** Whether onboarding + all permissions + default-SMS are done â€” the same "fully set up" check
- * Splash uses to decide when it's safe to route to Dashboard. Also used to gate ads that
- * shouldn't interrupt the onboarding/permission-granting flow (e.g. App Open on background
- * return, while the user is bouncing to system Settings for MIUI/overlay/alarm permissions). */
+/** Whether onboarding + language + default-SMS are done â€” the same "fully set up" check Splash
+ * uses to decide when it's safe to route to Dashboard. Also used to gate ads that shouldn't
+ * interrupt first-run setup (e.g. App Open on background return).
+ *
+ * Notification permission and the After Call permissions (Overlay/Battery/MIUI+OnePlus
+ * autostart) are deliberately NOT part of this check anymore -- notification is asked in context
+ * on the inbox itself, not during setup, and After Call is now opt-in from Settings, not part of
+ * first launch. A user who never touches After Call should never have "fully set up" permanently
+ * read false because of it. */
 object SetupState {
     fun isFullySetUp(context: Context): Boolean {
-        val hasNotif = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-        val hasPhone = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.CALL_PHONE
-        ) == PackageManager.PERMISSION_GRANTED
-
         val prefs = AppPreferences(context)
-        val isFullyOnboarded = prefs.onboardingCompleted && hasNotif && hasPhone
-        val isPermissionsDone = isFullyOnboarded && Settings.canDrawOverlays(context) &&
-                (!MiuiUtils.isMiui() || MiuiUtils.isMiuiAutostartGranted(context)) &&
-                prefs.languageSelected
+        val isCoreSetupDone = prefs.onboardingCompleted && prefs.languageSelected
 
         val isDefaultSms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = context.getSystemService(Context.ROLE_SERVICE) as android.app.role.RoleManager
@@ -41,6 +26,6 @@ object SetupState {
         }
         AnalyticsManager.setUserProperty("is_default_sms_app", if (isDefaultSms) "yes" else "no")
 
-        return isPermissionsDone && isDefaultSms
+        return isCoreSetupDone && isDefaultSms
     }
 }

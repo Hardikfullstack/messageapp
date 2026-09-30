@@ -381,8 +381,15 @@
     <string name="feature_message_scheduling_desc">Agende mensagens para serem enviadas automaticamente no horário desejado.</string>
     <string name="feature_after_call_title">Chamada telefônica</string>
     <string name="feature_after_call_desc">Permita o acesso a chamadas para que possamos mostrar ações de mensagens logo após o término da sua chamada.</string>
+    <string name="after_call_promo_title">Resposta rápida após chamadas</string>
+    <string name="after_call_promo_desc">Ative a permissão para aproveitar a resposta rápida após suas chamadas.</string>
+    <string name="after_call_promo_enable">Permitir</string>
+    <string name="content_desc_dismiss">Dispensar</string>
+    <string name="after_call_autostart_popup_title">Ativar início automático em segundo plano</string>
+    <string name="after_call_autostart_popup_desc">Sem isso, a resposta rápida após chamadas pode não funcionar de forma confiável no seu telefone. Ative o início automático para este app.</string>
+    <string name="after_call_autostart_toast">Encontre %1$s na lista e ative o Início automático</string>
     <string name="action_agree_continue">Concordar e continuar</string>
-    <string name="privacy_agree_prefix">Ao continuar, você concorda com nossa </string>
+    <string name="privacy_agree_prefix">Ao defini-lo como padrão, você concorda com nossa </string>
     <string name="privacy_policy_link_text">Política de Privacidade.</string>
     <string name="permission_needed_title">Permissão necessária</string>
     <string name="permission_needed_desc">Este aplicativo requer permissões de %1$s para funcionar corretamente. Como foi negada, ative-a manualmente:</string>

@@ -58,7 +58,11 @@ fun ChooseLanguageScreen(
     // Shares the same AppConfigViewModel instance created in MainActivity (Activity-scoped).
     val appConfigViewModel: AppConfigViewModel = viewModel(context as ComponentActivity)
     val adConfig by appConfigViewModel.appResponse.collectAsState()
-    val bigNativeAdUnitId = adConfig?.result?.let { result ->
+    // No ad on first run -- this is the very first setup screen a new user sees (Splash ->
+    // Language, before default-SMS/inbox), and the report this was built against is explicit that
+    // first-session setup screens shouldn't carry ads. Manual visits later (from Settings) still
+    // show it as before.
+    val bigNativeAdUnitId = if (isFirstRun) null else adConfig?.result?.let { result ->
         if (result.google_ads_on_off == "on" && result.native_2_on_off == "on") {
             result.native_2?.takeIf { it.isNotBlank() }
         } else null

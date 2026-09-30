@@ -47,6 +47,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.material3.ExperimentalMaterial3Api
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -73,9 +74,11 @@ import com.message.sms.texting.app.ads.NativeAdView
 import com.message.sms.texting.app.ui.components.dialogs.RateUsDialog
 import com.message.sms.texting.app.ui.components.dialogs.UpdateAppDialog
 import com.message.sms.texting.app.utils.AnalyticsManager
+import com.message.sms.texting.app.utils.AppPreferences
 import com.message.sms.texting.app.utils.AppUpdateHelper
 import com.message.sms.texting.app.utils.RateUsHelper
 import com.message.sms.texting.app.utils.isRemoteVersionNewer
+import com.message.sms.texting.app.ui.theme.AfterCallState
 import com.message.sms.texting.app.viewmodel.AppConfigViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,6 +112,167 @@ fun HomeScreen(
     val appConfigViewModel: AppConfigViewModel = viewModel(context as ComponentActivity)
     val adConfig by appConfigViewModel.appResponse.collectAsState()
     val adsEnabled = adConfig?.result?.google_ads_on_off == "on"
+
+    // Notification permission request was removed from here -- DashboardScreen (Home's parent,
+    // mounted at the same moment Home first lands) already asks for POST_NOTIFICATIONS on its own
+    // first composition, so a second ask here was firing right alongside it: redundant, and two
+    // requestPermission() launches racing on the same frame risks one silently no-op'ing.
+
+    // After Call promo card -- report's step 5: offer it as a dismissible optional card starting
+    // day 2+, not during onboarding. Shown only when it would actually still need the user to do
+    // something (Overlay missing) -- it disappears on its own once that's granted, from here or
+    // from Settings, no separate "already enabled" flag to keep in sync.
+    val appPrefs = remember { AppPreferences(context) }
+    val afterCallCoroutineScope = rememberCoroutineScope()
+    // Deliberately NOT persisted -- dismissing only hides it for this session (this composition,
+    // i.e. until the app is killed). A fresh cold start with Overlay still missing shows it again,
+    // instead of the user losing the nudge forever over one accidental/curious tap on the X.
+    var afterCallPromoDismissed by remember { mutableStateOf(false) }
+    var afterCallOverlayGranted by remember {
+        mutableStateOf(android.provider.Settings.canDrawOverlays(context))
+    }
+    // Session-only, same reasoning as afterCallPromoDismissed below -- "Not Now" only hides it
+    // for this app session (until killed). A fresh open with Autostart still off on a MIUI device
+    // shows it again, since the underlying live status (not a one-shot flag) drives this now.
+    var autostartNudgeDismissed by remember { mutableStateOf(false) }
+    var isMiuiAutostartGranted by remember {
+        mutableStateOf(com.message.sms.texting.app.utils.MiuiUtils.isMiuiAutostartGranted(context))
+    }
+    // Re-checked on Home's very first composition AND on every resume -- covers both a clean
+    // return from MIUI's Autostart screen and the case where MIUI kills this app's process
+    // instead (e.g. toggling it on then off before backing out): either way, the very next time
+    // Home appears, this reflects the real current status, not a stale one-shot flag.
+    fun refreshAutostartStatus() {
+        isMiuiAutostartGranted = com.message.sms.texting.app.utils.MiuiUtils.isMiuiAutostartGranted(context)
+    }
+    LaunchedEffect(Unit) { refreshAutostartStatus() }
+    val homeLifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(homeLifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                afterCallOverlayGranted = android.provider.Settings.canDrawOverlays(context)
+                refreshAutostartStatus()
+            }
+        }
+        homeLifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { homeLifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val showAutostartNudgeDialog = com.message.sms.texting.app.utils.MiuiUtils.isMiui() &&
+        afterCallOverlayGranted &&
+        !isMiuiAutostartGranted &&
+        !autostartNudgeDismissed
+    // Both timing gates below are disabled (kept as comments, not deleted, in case either is
+    // wanted back later) -- the card now shows from the very first Home landing if Overlay isn't
+    // granted yet, instead of waiting for day 2+ or a second app open.
+    // val daysSinceInstall = (System.currentTimeMillis() - appPrefs.firstLaunchTimeMs) / (24L * 60 * 60 * 1000)
+    // val isDayTwoOrLater = daysSinceInstall >= 1
+    // val isSecondOrLaterOpen = AppOpenCounter.currentCount(context) >= 1
+    val showAfterCallPromo = AfterCallState.readEnabled(context) &&
+        !afterCallOverlayGranted &&
+        !afterCallPromoDismissed
+
+    // No intermediate app screen for this -- tapping Enable jumps straight to the system Overlay
+    // settings. Non-MIUI devices are done once that returns (the ON_RESUME observer above already
+    // re-checks Overlay and hides the card). MIUI additionally needs Autostart to make the feature
+    // reliable, so once Overlay comes back granted on a MIUI device, this chains straight into
+    // MIUI's own Autostart manager screen too -- and only if THAT comes back still not granted
+    // does a popup nudge appear back here on Home (not shown at all for non-MIUI, since Autostart
+    // doesn't apply there).
+    val strAutostartToast = stringResource(R.string.after_call_autostart_toast, stringResource(R.string.splash_brand_name))
+
+    val miuiAutostartLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) {
+        // Fast path for the common case where MIUI returns cleanly -- the ON_RESUME observer
+        // above is the fallback for when it doesn't (process killed mid-flow).
+        refreshAutostartStatus()
+    }
+    fun launchMiuiAutostartSettings() {
+        // MIUI's Autostart manager is a generic list of every installed app -- without this,
+        // there's nothing in that screen pointing at what to actually do once it opens.
+        Toast.makeText(context, strAutostartToast, Toast.LENGTH_LONG).show()
+        try {
+            val intent = android.content.Intent()
+            intent.setClassName(
+                "com.miui.securitycenter",
+                "com.miui.permcenter.autostart.AutoStartManagementActivity"
+            )
+            miuiAutostartLauncher.launch(intent)
+        } catch (e: Exception) {
+            com.message.sms.texting.app.utils.MiuiUtils.openAppSettings(context)
+        }
+    }
+
+    val overlaySettingsLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) {
+        // No longer auto-chains straight into MIUI's Autostart screen -- that screen is known to
+        // sometimes kill this app's process on back (e.g. toggling it on then off before backing
+        // out), and doing it as an automatic redirect right after Overlay made that feel like the
+        // app randomly crashed. showAutostartNudgeDialog above is derived from live state, so just
+        // refreshing both here is enough for it to show itself if this is a MIUI device.
+        afterCallOverlayGranted = android.provider.Settings.canDrawOverlays(context)
+        refreshAutostartStatus()
+    }
+    fun openOverlaySettingsForAfterCall() {
+        val intent = android.content.Intent(
+            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            android.net.Uri.parse("package:${context.packageName}")
+        )
+        overlaySettingsLauncher.launch(intent)
+        // Same auto-return trick PermissionScreen.kt used for this exact permission -- polls in
+        // the background (this app is only paused, not killed, while the Overlay settings screen
+        // is up) and brings this app's task back to the front itself the moment it's granted, so
+        // the user doesn't have to manually press back. Skipped on MIUI on purpose: there, the
+        // manual back press is what's expected to happen next anyway (into the Autostart nudge
+        // popup), and layering this forced-return trick on top of MIUI's already-unpredictable
+        // process handling is an unnecessary risk for a device family that doesn't need it here.
+        if (!com.message.sms.texting.app.utils.MiuiUtils.isMiui()) {
+            afterCallCoroutineScope.launch {
+                // Bounded so a user who backs out without granting (and then just keeps using the
+                // app) doesn't leave this ticking in the background for the rest of the session --
+                // 600 x 300ms = 3 minutes, generous for someone actually working through the
+                // system dialog.
+                var attemptsLeft = 600
+                while (!android.provider.Settings.canDrawOverlays(context) && attemptsLeft > 0) {
+                    delay(300)
+                    attemptsLeft--
+                }
+                if (!android.provider.Settings.canDrawOverlays(context)) return@launch
+                try {
+                    val returnIntent = android.content.Intent(
+                        context,
+                        Class.forName("${context.packageName}.MainActivity")
+                    ).apply {
+                        addFlags(
+                            android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                                android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                                android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        )
+                    }
+                    context.startActivity(returnIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    val afterCallPhonePermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) {
+        openOverlaySettingsForAfterCall()
+    }
+    fun enableAfterCallFromPromo() {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.READ_PHONE_STATE
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            openOverlaySettingsForAfterCall()
+        } else {
+            afterCallPhonePermissionLauncher.launch(android.Manifest.permission.READ_PHONE_STATE)
+        }
+    }
 
     // Bottom-docked banner.
     val homeBannerAdUnitId = adConfig?.result?.let { result ->
@@ -150,13 +314,13 @@ fun HomeScreen(
         }
     }
 
-    // Auto Rate Us â€” shown once, on the user's very first kill+reopen (AppOpenCounter's count=1,
-    // which is already their first *return* to the app â€” the true first-ever launch never
-    // touches this counter). Skipped if they've already rated via Settings, or if this prompt
-    // has already fired once before.
+    // Auto Rate Us -- shown once, but only from day 2+ (a user who's only opened the app once or
+    // twice on day 1 hasn't had enough time with it yet to give a meaningful rating). Skipped if
+    // they've already rated via Settings, or if this prompt has already fired once before.
     var showAutoRateUsDialog by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        if (AppOpenCounter.currentCount(context) == 1 &&
+        val daysSinceInstall = (System.currentTimeMillis() - appPrefs.firstLaunchTimeMs) / (24L * 60 * 60 * 1000)
+        if (daysSinceInstall >= 1 &&
             !RateUsHelper.hasAutoShown(context) &&
             !RateUsHelper.hasInteracted(context)
         ) {
@@ -755,6 +919,81 @@ fun HomeScreen(
                     }
                 }
 
+                if (showAfterCallPromo) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                            .background(colorResource(R.color.light_gray), RoundedCornerShape(10.dp))
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.settings_ic_aftercall),
+                            contentDescription = null,
+                            tint = colorResource(R.color.primary),
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            // Title shares its row with the close (X) icon, same as the desc row
+                            // below shares its row with the Enable button.
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(R.string.after_call_promo_title),
+                                    modifier = Modifier.weight(1f),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontFamily = Inter,
+                                    color = colorResource(R.color.text_title),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Icon(
+                                    painter = painterResource(id = R.drawable.chat_ic_close),
+                                    contentDescription = stringResource(R.string.content_desc_dismiss),
+                                    tint = colorResource(R.color.text_des),
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clickable {
+                                            afterCallPromoDismissed = true
+                                        }
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(R.string.after_call_promo_desc),
+                                    modifier = Modifier.weight(1f),
+                                    fontSize = 12.sp,
+                                    fontFamily = Inter,
+                                    color = colorResource(R.color.text_des),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    onClick = { enableAfterCallFromPromo() },
+                                    shape = RoundedCornerShape(100.dp),
+                                    color = colorResource(R.color.primary)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.after_call_promo_enable),
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontFamily = Inter,
+                                        color = Color.White,
+
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 val showGroupsSection = selectedFilter == 0 && groups.isNotEmpty()
 
                 Box(modifier = Modifier.weight(1f)) {
@@ -780,11 +1019,14 @@ fun HomeScreen(
                     }
                 } else {
                     // null = native-ad row, Int = real message index. An ad row is inserted
-                    // before message index 0 and before every 5th message after that.
+                    // before message index 3 (report's rule: "no native ad above row 3-4" -- a
+                    // native ad sitting in row 1 reads as a real conversation, right next to the
+                    // send button, which risks accidental taps and looking deceptive) and before
+                    // every 5th message after that.
                     val homeListRows = remember(messages.itemCount, homeListNativeAdUnitId) {
                         buildList {
                             for (i in 0 until messages.itemCount) {
-                                if (homeListNativeAdUnitId != null && i % 5 == 0) add(null)
+                                if (homeListNativeAdUnitId != null && i >= 3 && (i - 3) % 5 == 0) add(null)
                                 add(i)
                             }
                         }
@@ -1034,6 +1276,13 @@ fun HomeScreen(
                     RateUsHelper.handleRating(context, stars)
                 },
                 onDismiss = { showAutoRateUsDialog = false }
+            )
+        }
+
+        if (showAutostartNudgeDialog) {
+            com.message.sms.texting.app.ui.components.dialogs.AutostartNudgeDialog(
+                onGrant = { launchMiuiAutostartSettings() },
+                onNotNow = { autostartNudgeDismissed = true }
             )
         }
 

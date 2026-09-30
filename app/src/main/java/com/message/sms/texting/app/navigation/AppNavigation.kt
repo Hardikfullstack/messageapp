@@ -9,7 +9,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.message.sms.texting.app.ui.screens.SplashScreen
-import com.message.sms.texting.app.ui.screens.OnboardingScreen
 import com.message.sms.texting.app.ui.screens.PermissionScreen
 import com.message.sms.texting.app.ui.screens.DefaultSmsScreen
 import com.message.sms.texting.app.ui.screens.DashboardScreen
@@ -206,44 +205,13 @@ fun AppNavigation(deepLinkRoute: String? = null, onDeepLinkConsumed: () -> Unit 
             )
         }
 
-        composable(Routes.Onboarding.route) {
-            OnboardingScreen(
-                onContinueClicked = {
-                    navController.navigate(Routes.Permissions.route) {
-                        popUpTo(Routes.Onboarding.route) { inclusive = true }
-                    }
-                },
-                onPrivacyPolicyClick = {
-                    navController.navigate(Routes.LegalWebView.createRoute("privacy"))
-                }
-            )
-        }
-        
+        // Overlay/Battery/MIUI+OnePlus autostart -- all for After Call. Not part of the mandatory
+        // setup chain anymore; kept wired here for the opt-in flow (see Settings) that triggers it
+        // once a user actually turns After Call on.
         composable(Routes.Permissions.route) {
             PermissionScreen(
                 onAllPermissionsGranted = {
-                    // Not always a first-run flow -- a returning user can land back here if a
-                    // permission (e.g. Overlay) got revoked later and they came back to re-grant
-                    // it, in which case language was already chosen and default-SMS may already
-                    // be set too. Route onward the same way Splash does, instead of unconditionally
-                    // sending everyone through language selection again.
-                    val prefs = com.message.sms.texting.app.utils.AppPreferences(context)
-                    val isDefaultSms = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                        val roleManager = context.getSystemService(android.content.Context.ROLE_SERVICE) as android.app.role.RoleManager
-                        roleManager.isRoleHeld(android.app.role.RoleManager.ROLE_SMS)
-                    } else {
-                        android.provider.Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
-                    }
-                    val nextRoute = if (!prefs.languageSelected) {
-                        Routes.ChooseLanguage.createRoute(firstRun = true)
-                    } else if (!isDefaultSms) {
-                        Routes.DefaultSms.route
-                    } else {
-                        Routes.Dashboard.route
-                    }
-                    navController.navigate(nextRoute) {
-                        popUpTo(Routes.Permissions.route) { inclusive = true }
-                    }
+                    navController.popBackStack()
                 }
             )
         }
@@ -251,9 +219,22 @@ fun AppNavigation(deepLinkRoute: String? = null, onDeepLinkConsumed: () -> Unit 
         composable(Routes.DefaultSms.route) {
             DefaultSmsScreen(
                 onDefaultSmsSet = {
-                    navController.navigate(Routes.Dashboard.route) {
+                    // Language was already auto-detected (if supported) by Splash's own check
+                    // before this screen was ever reached -- this just needs to read the
+                    // outcome, not re-detect it. An unsupported device language still falls
+                    // through to the manual picker here.
+                    val prefs = com.message.sms.texting.app.utils.AppPreferences(context)
+                    val nextRoute = if (!prefs.languageSelected) {
+                        Routes.ChooseLanguage.createRoute(firstRun = true)
+                    } else {
+                        Routes.Dashboard.route
+                    }
+                    navController.navigate(nextRoute) {
                         popUpTo(Routes.DefaultSms.route) { inclusive = true }
                     }
+                },
+                onPrivacyPolicyClick = {
+                    navController.navigate(Routes.LegalWebView.createRoute("privacy"))
                 }
             )
         }
@@ -301,7 +282,10 @@ fun AppNavigation(deepLinkRoute: String? = null, onDeepLinkConsumed: () -> Unit 
                 navController = navController,
                 isFirstRun = isFirstRun,
                 onFirstRunDone = {
-                    navController.navigate(Routes.DefaultSms.route) {
+                    // Reached here (firstRun=true) only once onboardingCompleted is already true,
+                    // which DefaultSmsScreen only sets after default-SMS is confirmed set -- so by
+                    // the time this fires, default-SMS is already done. Straight to Dashboard.
+                    navController.navigate(Routes.Dashboard.route) {
                         popUpTo(Routes.ChooseLanguage.route) { inclusive = true }
                     }
                 }

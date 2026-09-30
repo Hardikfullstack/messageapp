@@ -381,8 +381,15 @@
     <string name="feature_message_scheduling_desc">جدول الرسائل لإرسالها تلقائيًا في الوقت الذي تفضله.</string>
     <string name="feature_after_call_title">مكالمة هاتفية</string>
     <string name="feature_after_call_desc">اسمح بالوصول إلى المكالمات حتى نتمكن من عرض إجراءات الرسائل مباشرة بعد انتهاء مكالمتك.</string>
+    <string name="after_call_promo_title">الرد السريع بعد المكالمات</string>
+    <string name="after_call_promo_desc">فعّل الإذن للاستمتاع بالرد السريع بعد مكالماتك.</string>
+    <string name="after_call_promo_enable">سماح</string>
+    <string name="content_desc_dismiss">تجاهل</string>
+    <string name="after_call_autostart_popup_title">تفعيل التشغيل التلقائي في الخلفية</string>
+    <string name="after_call_autostart_popup_desc">بدون هذا، قد لا يعمل الرد السريع بعد المكالمات بشكل موثوق على هاتفك. فعّل التشغيل التلقائي لهذا التطبيق.</string>
+    <string name="after_call_autostart_toast">ابحث عن %1$s في القائمة وقم بتفعيل التشغيل التلقائي</string>
     <string name="action_agree_continue">أوافق ومتابعة</string>
-    <string name="privacy_agree_prefix">بالمتابعة، فإنك توافق على </string>
+    <string name="privacy_agree_prefix">بتعيينه كتطبيق افتراضي، فإنك توافق على </string>
     <string name="privacy_policy_link_text">سياسة الخصوصية الخاصة بنا.</string>
     <string name="permission_needed_title">الإذن مطلوب</string>
     <string name="permission_needed_desc">يتطلب هذا التطبيق أذونات %1$s للعمل بشكل صحيح. نظرًا لرفضها، يرجى تفعيلها يدويًا:</string>

@@ -381,8 +381,15 @@
     <string name="feature_message_scheduling_desc">Pianifica l\'invio automatico dei messaggi all\'orario preferito.</string>
     <string name="feature_after_call_title">Telefonata</string>
     <string name="feature_after_call_desc">Consenti l\'accesso alle chiamate in modo da poter mostrare le azioni dei messaggi subito dopo la fine della chiamata.</string>
+    <string name="after_call_promo_title">Risposta rapida dopo le chiamate</string>
+    <string name="after_call_promo_desc">Attiva il permesso per usufruire della risposta rapida dopo le tue chiamate.</string>
+    <string name="after_call_promo_enable">Consenti</string>
+    <string name="content_desc_dismiss">Ignora</string>
+    <string name="after_call_autostart_popup_title">Attiva l\'avvio automatico in background</string>
+    <string name="after_call_autostart_popup_desc">Senza questo, la risposta rapida dopo le chiamate potrebbe non funzionare in modo affidabile sul tuo telefono. Attiva l\'avvio automatico per questa app.</string>
+    <string name="after_call_autostart_toast">Trova %1$s nell\'elenco e attiva l\'avvio automatico</string>
     <string name="action_agree_continue">Accetta e continua</string>
-    <string name="privacy_agree_prefix">Continuando, accetti la nostra </string>
+    <string name="privacy_agree_prefix">Impostandola come predefinita, accetti la nostra </string>
     <string name="privacy_policy_link_text">Informativa sulla privacy.</string>
     <string name="permission_needed_title">Autorizzazione necessaria</string>
     <string name="permission_needed_desc">Questa app richiede le autorizzazioni %1$s per funzionare correttamente. Poiché è stata negata, attivala manualmente:</string>

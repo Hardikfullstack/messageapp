@@ -37,14 +37,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.message.sms.texting.app.ui.theme.Inter
 import kotlinx.coroutines.delay
 
-import android.os.Build
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
 import com.message.sms.texting.app.utils.AppPreferences
-import com.message.sms.texting.app.utils.MiuiUtils
 import com.message.sms.texting.app.navigation.Routes
-import android.provider.Settings
 import android.provider.Telephony
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.collectAsState
@@ -130,29 +124,27 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
 
-        val hasNotif = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(
-                    view.context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-        val hasPhone = ContextCompat.checkSelfPermission(
-            view.context,
-            Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
-            view.context,
-            Manifest.permission.CALL_PHONE
-        ) == PackageManager.PERMISSION_GRANTED
-
         val prefs = AppPreferences(view.context)
-        val isFullyOnboarded = prefs.onboardingCompleted && hasNotif && hasPhone
-        // MIUI's "Display pop-up" step isn't requested anymore, but Autostart IS still requested
-        // on MIUI (see PermissionScreen.kt's computeNextStep), so this must wait on it too, or
-        // closing the app before completing that step lets it get skipped entirely on the next
-        // open (this exact bug was reported and is what this fixes). OnePlus/Oppo/Realme Autostart
-        // is no longer requested at all (the overlay-window trick makes it unnecessary), so no
-        // corresponding wait for it here.
-        val isPermissionsDone = isFullyOnboarded && Settings.canDrawOverlays(view.context) &&
-                (!MiuiUtils.isMiui() || MiuiUtils.isMiuiAutostartGranted(view.context))
+        // Notification permission is now asked in context on the inbox itself (see
+        // HomeScreen.kt), and phone/call-log permissions plus Overlay/MIUI-autostart only matter
+        // for the After Call feature, which moved to an opt-in offered later from Settings --
+        // none of them gate first-launch setup anymore. This screen's job is just the welcome
+        // step and handing off to language/default-SMS.
+        val isFullyOnboarded = prefs.onboardingCompleted
+
+        // Auto-detect from the device's own language if it's one of the app's supported ones --
+        // skips ChooseLanguageScreen (and its ad) entirely for most users; only a genuinely
+        // unsupported device language still shows the manual picker. Manual override always
+        // stays available from Settings regardless of how this was set.
+        if (!prefs.languageSelected) {
+            val deviceLanguageCode = java.util.Locale.getDefault().language
+            val supportedMatch = com.message.sms.texting.app.ui.theme.AppLanguages
+                .find { it.code == deviceLanguageCode }
+            if (supportedMatch != null) {
+                com.message.sms.texting.app.ui.theme.LanguageState.setLanguage(view.context, supportedMatch.code)
+                prefs.languageSelected = true
+            }
+        }
 
         val isDefaultSms =
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -169,9 +161,14 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
             delay(1100)
         }
 
+        // Permissions.route (Overlay/Battery/MIUI+OnePlus autostart -- all for After Call) is
+        // deliberately not part of this chain anymore; it's only reached later, opt-in, from
+        // Settings once a user actually turns After Call on. Onboarding's old welcome copy is
+        // now merged into DefaultSmsScreen itself (one screen, one button) -- so a user who
+        // hasn't finished onboarding yet goes straight there; it sets onboardingCompleted once
+        // default-SMS is confirmed, then hands off to language/Dashboard.
         val nextRoute =
-            if (!isFullyOnboarded) Routes.Onboarding.route
-            else if (!isPermissionsDone) Routes.Permissions.route
+            if (!isFullyOnboarded) Routes.DefaultSms.route
             else if (!prefs.languageSelected) Routes.ChooseLanguage.createRoute(firstRun = true)
             else if (!isDefaultSms) Routes.DefaultSms.route
             else Routes.Dashboard.route

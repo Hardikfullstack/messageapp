@@ -55,6 +55,7 @@ class ChatViewModel(
     private var actualThreadId = threadId
 
     init {
+        AnalyticsManager.logEventWithAction("message_opened", "ChatScreen", if (isGroupMode) "group" else "single")
         if (isGroupMode) {
             loadGroupMessages()
         } else {

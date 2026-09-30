@@ -111,21 +111,13 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                // ChooseLanguageScreen's ad (first-run only) -- lives here instead of Splash's
-                // own short-lived LaunchedEffect, which only stays alive for Splash's ~1.1s
-                // branding delay. If adConfig arrived any later than that (e.g. the very first
-                // fetch this install, no cache yet), Splash had already navigated to Permissions
-                // before its preload ever got a chance to fire, and nothing was left listening
-                // for adConfig to catch up -- ChooseLanguageScreen then loaded fresh, visibly
-                // slower. This LaunchedEffect stays alive for the whole Activity session, so it
-                // reliably catches adConfig whenever it actually arrives.
-                if (!com.message.sms.texting.app.utils.AppPreferences(this@MainActivity).languageSelected &&
-                    result.native_2_on_off == "on"
-                ) {
-                    result.native_2?.takeIf { it.isNotBlank() }?.let {
-                        com.message.sms.texting.app.ads.NativeAdCache.preload(this@MainActivity, it)
-                    }
-                }
+                // ChooseLanguageScreen's ad used to be preloaded here for the first-run case, but
+                // that screen no longer shows an ad at all when isFirstRun is true (first-session
+                // setup screens shouldn't carry ads) -- and !languageSelected only ever happens
+                // during that same first-run flow in this app's nav structure (a later manual
+                // visit from Settings always has languageSelected already true by then), so this
+                // preload had nothing left to serve. Removed rather than left preloading an ad
+                // that could never actually be shown.
             }
 
             MessagesTheme(darkTheme = isSystemInDarkTheme()) {

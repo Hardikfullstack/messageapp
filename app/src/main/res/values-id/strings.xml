@@ -381,8 +381,15 @@
     <string name="feature_message_scheduling_desc">Jadwalkan pesan untuk dikirim secara otomatis pada waktu yang Anda inginkan.</string>
     <string name="feature_after_call_title">Panggilan Telepon</string>
     <string name="feature_after_call_desc">Izinkan akses panggilan agar kami dapat menampilkan tindakan pesan tepat setelah panggilan Anda berakhir.</string>
+    <string name="after_call_promo_title">Balasan Cepat Setelah Panggilan</string>
+    <string name="after_call_promo_desc">Aktifkan izin untuk menikmati balasan cepat setelah panggilan Anda.</string>
+    <string name="after_call_promo_enable">Izinkan</string>
+    <string name="content_desc_dismiss">Tutup</string>
+    <string name="after_call_autostart_popup_title">Aktifkan mulai otomatis di latar belakang</string>
+    <string name="after_call_autostart_popup_desc">Tanpa ini, balasan cepat setelah panggilan mungkin tidak berfungsi dengan andal di ponsel Anda. Aktifkan mulai otomatis untuk aplikasi ini.</string>
+    <string name="after_call_autostart_toast">Temukan %1$s dalam daftar dan aktifkan Mulai Otomatis</string>
     <string name="action_agree_continue">Setuju &amp; Lanjutkan</string>
-    <string name="privacy_agree_prefix">Dengan melanjutkan, Anda menyetujui </string>
+    <string name="privacy_agree_prefix">Dengan menjadikannya default, Anda menyetujui </string>
     <string name="privacy_policy_link_text">Kebijakan Privasi kami.</string>
     <string name="permission_needed_title">Izin Diperlukan</string>
     <string name="permission_needed_desc">Aplikasi ini memerlukan izin %1$s agar berfungsi dengan baik. Karena ditolak, harap aktifkan secara manual:</string>

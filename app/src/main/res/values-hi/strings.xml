@@ -381,8 +381,15 @@
     <string name="feature_message_scheduling_desc">अपने पसंदीदा समय पर स्वचालित रूप से भेजे जाने के लिए संदेश शेड्यूल करें।</string>
     <string name="feature_after_call_title">फ़ोन कॉल</string>
     <string name="feature_after_call_desc">कॉल एक्सेस की अनुमति दें ताकि हम आपकी कॉल समाप्त होने के ठीक बाद संदेश क्रियाएं दिखा सकें।</string>
+    <string name="after_call_promo_title">कॉल के बाद क्विक रिप्लाई</string>
+    <string name="after_call_promo_desc">अपनी कॉल के बाद क्विक रिप्लाई का आनंद लेने के लिए अनुमति सक्षम करें।</string>
+    <string name="after_call_promo_enable">अनुमति दें</string>
+    <string name="content_desc_dismiss">बंद करें</string>
+    <string name="after_call_autostart_popup_title">बैकग्राउंड ऑटो-स्टार्ट सक्षम करें</string>
+    <string name="after_call_autostart_popup_desc">इसके बिना, कॉल के बाद क्विक रिप्लाई आपके फोन पर ठीक से काम नहीं कर सकता। इस ऐप के लिए ऑटो-स्टार्ट चालू करें।</string>
+    <string name="after_call_autostart_toast">सूची में %1$s ढूंढें और ऑटो-स्टार्ट चालू करें</string>
     <string name="action_agree_continue">सहमत हों और जारी रखें</string>
-    <string name="privacy_agree_prefix">जारी रखकर, आप हमारी </string>
+    <string name="privacy_agree_prefix">डिफ़ॉल्ट के रूप में सेट करके, आप हमारी </string>
     <string name="privacy_policy_link_text">गोपनीयता नीति से सहमत होते हैं।</string>
     <string name="permission_needed_title">अनुमति आवश्यक</string>
     <string name="permission_needed_desc">इस ऐप को सही ढंग से काम करने के लिए %1$s अनुमतियों की आवश्यकता है। चूंकि इसे अस्वीकार कर दिया गया था, कृपया इसे मैन्युअल रूप से सक्षम करें:</string>

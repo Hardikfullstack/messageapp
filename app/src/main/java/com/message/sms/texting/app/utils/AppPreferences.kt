@@ -35,4 +35,16 @@ class AppPreferences(context: Context) {
     var onePlusAutostartCompleted: Boolean
         get() = prefs.getBoolean("oneplus_autostart_completed", false)
         set(value) = prefs.edit().putBoolean("oneplus_autostart_completed", value).apply()
+
+    // Self-initializing on first read -- stamps "now" the first time anything asks, so no single
+    // call site (Splash, MainActivity, etc) needs to own setting it explicitly. Used to gate the
+    // After Call promo card to "day 2+" instead of showing it on the very first session.
+    val firstLaunchTimeMs: Long
+        get() {
+            val existing = prefs.getLong("first_launch_time_ms", 0L)
+            if (existing != 0L) return existing
+            val now = System.currentTimeMillis()
+            prefs.edit().putLong("first_launch_time_ms", now).apply()
+            return now
+        }
 }

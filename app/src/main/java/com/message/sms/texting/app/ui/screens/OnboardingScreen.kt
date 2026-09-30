@@ -1,371 +1,31 @@
-﻿package com.message.sms.texting.app.ui.screens
+package com.message.sms.texting.app.ui.screens
 
-import android.app.Activity
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.ClickableText
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
-import com.message.sms.texting.app.utils.AnalyticsManager
-import com.message.sms.texting.app.utils.AppPreferences
-import com.message.sms.texting.app.ui.modifiers.animatedPulse
-import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import android.Manifest
-import android.os.Build
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import com.message.sms.texting.app.ui.theme.MessagesTheme
 import com.message.sms.texting.app.R
 import com.message.sms.texting.app.ui.theme.Inter
 
-@Composable
-fun OnboardingScreen(
-    onContinueClicked: () -> Unit,
-    onPrivacyPolicyClick: () -> Unit = {}
-) {
-    val view = LocalView.current
-    val context = LocalContext.current
-    val prefs = AppPreferences(context)
-    var currentPermissionStep by remember { mutableStateOf(0) }
-
-    // Used only to auto-skip the intro below if both permissions were already granted before
-    // this screen was even reached -- re-checked at every point permission state could change.
-    var isNotifGranted by remember { mutableStateOf(false) }
-    var isPhoneGranted by remember { mutableStateOf(false) }
-    fun refreshGrantedStatus() {
-        isNotifGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        isPhoneGranted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CALL_PHONE
-            ) == PackageManager.PERMISSION_GRANTED
-    }
-    LaunchedEffect(Unit) {
-        refreshGrantedStatus()
-        // Both permissions were already granted before this screen was even reached (e.g. the
-        // user granted them via system Settings directly, without ever finishing this flow's own
-        // button-driven steps) -- skip straight past the intro instead of showing it again.
-        if (isNotifGranted && isPhoneGranted) {
-            currentPermissionStep = 3
-        }
-    }
-
-    // No retry/settings-dialog detour on denial anymore -- whatever the user picks (allow or
-    // deny) for a permission, the flow immediately moves on to the next step. Chaining straight
-    // through like this is what makes the two system permission dialogs appear back-to-back
-    // instead of pausing on a denial and waiting for another tap.
-    val notificationLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) {
-        refreshGrantedStatus()
-        currentPermissionStep = 2
-    }
-
-    val phoneLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) {
-        refreshGrantedStatus()
-        currentPermissionStep = 3
-    }
-
-    LaunchedEffect(currentPermissionStep) {
-        when (currentPermissionStep) {
-            1 -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    currentPermissionStep = 2
-                }
-            }
-
-            2 -> {
-                phoneLauncher.launch(
-                    arrayOf(
-                        Manifest.permission.READ_PHONE_STATE,
-                        Manifest.permission.CALL_PHONE
-                    )
-                )
-            }
-
-            3 -> {
-                prefs.onboardingCompleted = true
-                AnalyticsManager.logEventWithAction("onboarding_completed", "OnboardingScreen", "finished")
-                onContinueClicked()
-                currentPermissionStep = 0
-            }
-        }
-    }
-    LaunchedEffect(Unit) {
-        val activity = view.context as? Activity
-        val window = activity?.window
-        if (window != null) {
-            val insetsController = WindowCompat.getInsetsController(window, view)
-            insetsController.show(WindowInsetsCompat.Type.statusBars())
-            // Gesture navigation devices skip hiding the nav bar -- see MainActivity's matching
-            // comment: doing so has been observed to also disable the OS's own edge-swipe back
-            // gesture entirely on some OEM skins (OxygenOS/ColorOS).
-            if (!com.message.sms.texting.app.utils.isGestureNavigationEnabled(activity)) {
-                insetsController.hide(WindowInsetsCompat.Type.navigationBars())
-                insetsController.systemBarsBehavior =
-                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        }
-    }
-
-    val strWelcomeTo = stringResource(R.string.welcome_to)
-    val strTextMessaging = stringResource(R.string.text_messaging)
-    val strFeatureSmartNotificationsTitle = stringResource(R.string.feature_smart_notifications_title)
-    val strFeatureSmartNotificationsDesc = stringResource(R.string.feature_smart_notifications_desc)
-    val strFeatureAfterCallTitle = stringResource(R.string.feature_after_call_title)
-    val strFeatureAfterCallDesc = stringResource(R.string.feature_after_call_desc)
-    val strActionAgreeContinue = stringResource(R.string.action_agree_continue)
-    val strPrivacyAgreePrefix = stringResource(R.string.privacy_agree_prefix)
-    val strPrivacyPolicyLinkText = stringResource(R.string.privacy_policy_link_text)
-
-    Surface(
-        modifier = Modifier
-            .systemBarsPadding()
-            .fillMaxSize(),
-        color = colorResource(R.color.bg_primary)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp , vertical = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            val interactionSource = remember { MutableInteractionSource() }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Image(
-                    painter = painterResource(id = R.drawable.permission_main),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(height = 120.dp)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClick = { currentPermissionStep = 1 }
-                        )
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text(
-                    text = strWelcomeTo,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = Inter,
-                    lineHeight = 30.sp,
-                    color = colorResource(R.color.text_title),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp)
-                )
-
-                Text(
-                    text = strTextMessaging,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = Inter,
-                    lineHeight = 30.sp,
-                    color = colorResource(R.color.primary),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                FeatureItem(
-                    iconRes = R.drawable.permission_ic_notification,
-                    title = strFeatureSmartNotificationsTitle,
-                    description = strFeatureSmartNotificationsDesc,
-                    onClick = { currentPermissionStep = 1 }
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                FeatureItem(
-                    iconRes = R.drawable.permission_ic_call,
-                    title = strFeatureAfterCallTitle,
-                    description = strFeatureAfterCallDesc,
-                    onClick = { currentPermissionStep = 1 }
-                )
-            }
-
-            Button(
-                onClick = { currentPermissionStep = 1 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(62.dp)
-                    .animatedPulse(colorResource(R.color.primary)),
-                shape = RoundedCornerShape(100.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(R.color.primary)
-                )
-            ) {
-                Text(
-                    text = strActionAgreeContinue,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = Inter,
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            val privacyText = buildAnnotatedString {
-                withStyle(
-                    style = SpanStyle(
-                        color = colorResource(R.color.text_title),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        fontFamily = Inter
-                    )
-                ) {
-                    // Trailing space in the XML string resource gets trimmed by the resource
-                    // compiler at build time (unquoted strings lose leading/trailing whitespace),
-                    // so the space before "Privacy Policy" is added explicitly here instead.
-                    append(strPrivacyAgreePrefix.trimEnd() + " ")
-                }
-                pushStringAnnotation(tag = "privacy_policy", annotation = "privacy_policy")
-                withStyle(
-                    style = SpanStyle(
-                        color = colorResource(R.color.primary),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 12.sp,
-                        fontFamily = Inter,
-                        textDecoration = TextDecoration.Underline
-                    )
-                ) {
-                    append(strPrivacyPolicyLinkText)
-                }
-                pop()
-            }
-
-            ClickableText(
-                text = privacyText,
-                style = TextStyle(textAlign = TextAlign.Center),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 5.dp),
-                onClick = { offset ->
-                    privacyText.getStringAnnotations("privacy_policy", offset, offset)
-                        .firstOrNull()?.let { onPrivacyPolicyClick() }
-                }
-            )
-        }
-    }
-}
-
-@Composable
-fun FeatureItem(
-    iconRes: Int,
-    title: String,
-    description: String,
-    onClick: () -> Unit = {}
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            ),
-        verticalAlignment = Alignment.Top
-    ) {
-        Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = null,
-            tint = colorResource(R.color.feature_icon_tint),
-            modifier = Modifier
-                .size(26.dp)
-                .padding(top = 3.dp)
-        )
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = Inter,
-                color = colorResource(R.color.text_title)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = description,
-                fontSize = 16.sp,
-                fontFamily = Inter,
-                fontWeight = FontWeight.Medium,
-                color = colorResource(R.color.text_des),
-                lineHeight = 20.sp
-            )
-        }
-    }
-}
-
+/** The welcome copy that used to live here (OnboardingScreen composable) is now merged into
+ * DefaultSmsScreen.kt -- one welcome screen with a single "set as default SMS app" button,
+ * matching the recommended flow. This file now only holds PermissionSettingsDialog, still used
+ * separately by DashboardScreen.kt for its in-context permission prompts. */
 @Composable
 fun PermissionSettingsDialog(
     onDismiss: () -> Unit,
@@ -373,7 +33,10 @@ fun PermissionSettingsDialog(
     // Defaults preserve the original Phone/Call-Log wording used during onboarding; the Dashboard's
     // notification-permission dialog passes "Notification" instead so the steps stay accurate.
     permissionDescLabel: String = stringResource(R.string.permission_label_phone),
-    permissionStepLabel: String = stringResource(R.string.permission_step_label_phone)
+    permissionStepLabel: String = stringResource(R.string.permission_step_label_phone),
+    // Off for SMS (the app can't work without it, so it's intentionally not closeable any way but
+    // granting the permission) and on for Notification (a soft nudge the user can dismiss).
+    showCloseIcon: Boolean = false
 ) {
     val strPermissionNeededTitle = stringResource(R.string.permission_needed_title)
     val strPermissionNeededDesc = String.format(stringResource(R.string.permission_needed_desc), permissionDescLabel)
@@ -386,11 +49,27 @@ fun PermissionSettingsDialog(
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = strPermissionNeededTitle,
-                fontWeight = FontWeight.Bold,
-                color = colorResource(R.color.text_title)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = strPermissionNeededTitle,
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.text_title)
+                )
+                if (showCloseIcon) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.chat_ic_close),
+                        contentDescription = stringResource(R.string.content_desc_dismiss),
+                        tint = colorResource(R.color.text_des),
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clickable(onClick = onDismiss)
+                    )
+                }
+            }
         },
         text = {
             Column {

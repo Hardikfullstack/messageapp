@@ -81,6 +81,28 @@ fun SettingsScreen(navController: NavController) {
     var afterCallScreen by remember { mutableStateOf(AfterCallState.enabled.value) }
     var showDisableAfterCallDialog by remember { mutableStateOf(false) }
 
+    // READ_PHONE_STATE is what AfterCallReceiver needs to actually receive
+    // ACTION_PHONE_STATE_CHANGED -- without it granted, the feature silently never fires. This is
+    // the only place it's requested now that it's opt-in from Settings instead of onboarding;
+    // same "ask once, respect whatever the user picks" treatment as the rest of the app.
+    val readPhoneStatePermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) {
+        afterCallScreen = true
+        AfterCallState.setEnabled(context, true)
+    }
+    fun enableAfterCall() {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.READ_PHONE_STATE
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            afterCallScreen = true
+            AfterCallState.setEnabled(context, true)
+        } else {
+            readPhoneStatePermissionLauncher.launch(android.Manifest.permission.READ_PHONE_STATE)
+        }
+    }
+
     var selectedThemeMode by remember { mutableStateOf(ThemeState.mode.value) }
     var selectedFontSizeMode by remember { mutableStateOf(FontSizeState.mode.value) }
     var selectedDelayedSendingMode by remember { mutableStateOf(DelayedSendingState.mode.value) }
@@ -334,8 +356,7 @@ fun SettingsScreen(navController: NavController) {
                     if (afterCallScreen) {
                         showDisableAfterCallDialog = true
                     } else {
-                        afterCallScreen = true
-                        AfterCallState.setEnabled(context, true)
+                        enableAfterCall()
                     }
                 },
                 trailing = {
@@ -345,8 +366,7 @@ fun SettingsScreen(navController: NavController) {
                             if (!it) {
                                 showDisableAfterCallDialog = true
                             } else {
-                                afterCallScreen = true
-                                AfterCallState.setEnabled(context, true)
+                                enableAfterCall()
                             }
                         }
                     )

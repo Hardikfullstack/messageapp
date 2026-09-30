@@ -65,6 +65,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         if (!code.isNullOrEmpty()) {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             clipboard.setPrimaryClip(ClipData.newPlainText("OTP", code))
+                            com.message.sms.texting.app.utils.AnalyticsManager.logEventWithAction(
+                                "otp_copied", "Notification", "copy"
+                            )
                         }
                         repository.markThreadAsRead(threadId)
                         NotificationManagerCompat.from(context).cancel(notificationId)
