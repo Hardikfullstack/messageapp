@@ -22,6 +22,16 @@ import androidx.paging.PagingSource
 
 class SmsRepository(private val context: Context) {
 
+    // SQLite has a hard cap on bound variables per compiled statement (999 on the older SQLite
+    // versions still shipped in some OEM system images, e.g. Android 8.1 on budget devices like
+    // the Infinix X650 this crashed on -- newer SQLite raises it, but there's no reliable way to
+    // query the actual runtime limit from Room/Android, so staying under the lowest known one is
+    // the only safe bet). "WHERE id IN (:ids)" queries compile to one "?" per id, so a single
+    // DELETE with a few thousand ids (e.g. a big sync-reconciliation or a long-running "delete
+    // messages older than N days" auto-purge) blows past that limit and crashes with
+    // "too many SQL variables". Splitting into safe-sized batches avoids it regardless of list size.
+    private fun <T> List<T>.chunkedForSqlite() = chunked(900)
+
     private val smsDao = AppDatabase.getDatabase(context).smsDao()
     private val scheduledMessageDao = AppDatabase.getDatabase(context).scheduledMessageDao()
     private val blockedContactDao = AppDatabase.getDatabase(context).blockedContactDao()
@@ -465,7 +475,9 @@ class SmsRepository(private val context: Context) {
         // permission grant, before the provider is fully ready) being misread as "every message
         // was deleted" â€” only trust this reconciliation when the system actually reported rows.
         if (deletedFromSystem.isNotEmpty() && systemIds.isNotEmpty()) {
-            smsDao.deleteMessages(deletedFromSystem.toList())
+            deletedFromSystem.toList().chunkedForSqlite().forEach { chunk ->
+                smsDao.deleteMessages(chunk)
+            }
         }
 
         val projection = arrayOf(
@@ -586,11 +598,11 @@ class SmsRepository(private val context: Context) {
     }
 
     suspend fun markAsUnread(ids: List<Long>) = withContext(Dispatchers.IO) {
-        smsDao.markAsUnread(ids)
+        ids.chunkedForSqlite().forEach { chunk -> smsDao.markAsUnread(chunk) }
     }
 
     suspend fun markAsRead(ids: List<Long>) = withContext(Dispatchers.IO) {
-        smsDao.markAsRead(ids)
+        ids.chunkedForSqlite().forEach { chunk -> smsDao.markAsRead(chunk) }
     }
 
     suspend fun markThreadAsRead(threadId: Long) = withContext(Dispatchers.IO) {
@@ -609,15 +621,13 @@ class SmsRepository(private val context: Context) {
     }
 
     suspend fun setPinned(ids: List<Long>, isPinned: Boolean) = withContext(Dispatchers.IO) {
-        if (isPinned) {
-            smsDao.pinMessages(ids)
-        } else {
-            smsDao.unpinMessages(ids)
+        ids.chunkedForSqlite().forEach { chunk ->
+            if (isPinned) smsDao.pinMessages(chunk) else smsDao.unpinMessages(chunk)
         }
     }
 
     suspend fun setArchived(ids: List<Long>, isArchived: Boolean) = withContext(Dispatchers.IO) {
-        smsDao.setArchived(ids, isArchived)
+        ids.chunkedForSqlite().forEach { chunk -> smsDao.setArchived(chunk, isArchived) }
         AnalyticsManager.logEventWithAction("chat_archived", "Home", if (isArchived) "archive" else "unarchive", mapOf("count" to ids.size))
     }
 
@@ -634,7 +644,7 @@ class SmsRepository(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        smsDao.deleteMessages(ids)
+        ids.chunkedForSqlite().forEach { chunk -> smsDao.deleteMessages(chunk) }
         smsDao.insertDeletedMessages(ids.map { com.message.sms.texting.app.model.DeletedMessage(it) })
     }
 
@@ -896,7 +906,7 @@ class SmsRepository(private val context: Context) {
     }
 
     suspend fun toggleStarStatus(ids: List<Long>, isStarred: Boolean) = withContext(Dispatchers.IO) {
-        smsDao.updateStarStatus(ids, isStarred)
+        ids.chunkedForSqlite().forEach { chunk -> smsDao.updateStarStatus(chunk, isStarred) }
         AnalyticsManager.logEventWithAction("message_starred", "Chat", if (isStarred) "star" else "unstar", mapOf("count" to ids.size))
     }
 
@@ -1114,15 +1124,15 @@ class SmsRepository(private val context: Context) {
     }
 
     suspend fun setGroupsArchived(ids: List<Long>, isArchived: Boolean) = withContext(Dispatchers.IO) {
-        groupDao.setArchivedBulk(ids, isArchived)
+        ids.chunkedForSqlite().forEach { chunk -> groupDao.setArchivedBulk(chunk, isArchived) }
     }
 
     suspend fun setGroupsPinned(ids: List<Long>, isPinned: Boolean) = withContext(Dispatchers.IO) {
-        groupDao.setPinnedBulk(ids, isPinned)
+        ids.chunkedForSqlite().forEach { chunk -> groupDao.setPinnedBulk(chunk, isPinned) }
     }
 
     suspend fun deleteGroups(ids: List<Long>) = withContext(Dispatchers.IO) {
-        groupDao.deleteByIds(ids)
+        ids.chunkedForSqlite().forEach { chunk -> groupDao.deleteByIds(chunk) }
         for (id in ids) {
             groupMessageDao.deleteMessagesForGroup(id)
         }

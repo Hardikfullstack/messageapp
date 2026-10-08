@@ -1107,7 +1107,8 @@ fun HomeScreen(
                                         },
                                         onLeftSwipeAction = {
                                             handleGroupSwipeAction(SwipeActionsState.leftAction.value, groupWithLastMessage)
-                                        }
+                                        },
+                                        isListScrolling = { currentListState.isScrollInProgress }
                                     )
                                 }
                             }
@@ -1195,7 +1196,8 @@ fun HomeScreen(
                                         onLeftSwipeAction = {
                                             handleMessageSwipeAction(SwipeActionsState.leftAction.value, msg)
                                         },
-                                        draftText = drafts[msg.address]
+                                        draftText = drafts[msg.address],
+                                        isListScrolling = { currentListState.isScrollInProgress }
                                     )
                                 }
                             }
@@ -1316,7 +1318,8 @@ fun MessageItemUi(
     enableSwipe: Boolean = true,
     onRightSwipeAction: () -> Boolean = { false },
     onLeftSwipeAction: () -> Boolean = { false },
-    draftText: String? = null
+    draftText: String? = null,
+    isListScrolling: () -> Boolean = { false }
 ) {
     val isUnread = !msg.read
     val bgColor = if (isSelected) colorResource(R.color.selection_blue_bg) else colorResource(R.color.bg_primary)
@@ -1337,13 +1340,20 @@ fun MessageItemUi(
     val strCopy = stringResource(R.string.content_desc_copy)
     val strCopyOtp = stringResource(R.string.otp_copy_label)
 
+    // Contacts app's SwipeableCallLogRow pattern (action fires, then always snaps back instead of
+    // committing to a dismissed state) plus two guards Contacts itself never got to tune before
+    // disabling swipe entirely for the same accidental-trigger bug: a higher-than-default
+    // positional threshold, and rejecting the swipe outright while the list is (or just was)
+    // actively scrolling -- a deliberate swipe only ever starts once the list is still.
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
+            if (isListScrolling()) return@rememberSwipeToDismissBoxState false
             when (dismissValue) {
                 SwipeToDismissBoxValue.StartToEnd -> onRightSwipeAction()
                 SwipeToDismissBoxValue.EndToStart -> onLeftSwipeAction()
-                else -> false
+                SwipeToDismissBoxValue.Settled -> {}
             }
+            false
         },
         positionalThreshold = { it * 0.85f }
     )
@@ -1622,7 +1632,8 @@ fun GroupListItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
     onRightSwipeAction: () -> Boolean = { false },
-    onLeftSwipeAction: () -> Boolean = { false }
+    onLeftSwipeAction: () -> Boolean = { false },
+    isListScrolling: () -> Boolean = { false }
 ) {
     val group = groupWithLastMessage.group
     val bgColor = if (isSelected) colorResource(R.color.selection_blue_bg) else colorResource(R.color.bg_primary)
@@ -1633,14 +1644,18 @@ fun GroupListItem(
         formatGroupListTime(groupWithLastMessage.lastMessageDate ?: group.createdAt)
     }
 
+    // See MessageItemUi's matching comment -- same Contacts-pattern-plus-guards, minus the
+    // enabled-guard which is unrelated to the accidental-swipe issue and still needed here.
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             if (!enabled) return@rememberSwipeToDismissBoxState false
+            if (isListScrolling()) return@rememberSwipeToDismissBoxState false
             when (dismissValue) {
                 SwipeToDismissBoxValue.StartToEnd -> onRightSwipeAction()
                 SwipeToDismissBoxValue.EndToStart -> onLeftSwipeAction()
-                else -> false
+                SwipeToDismissBoxValue.Settled -> {}
             }
+            false
         },
         positionalThreshold = { it * 0.85f }
     )

@@ -183,7 +183,10 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
                 appConfigViewModel.appResponse.value?.result?.google_ads_on_off == "on" &&
                         appConfigViewModel.isOnline.value
 
-            if (adsEnabled && activity != null && adType == ColdStartAdType.APP_OPEN) {
+            val appOpenSlotOn = appConfigViewModel.appResponse.value?.result?.app_open_1_on_off == "on"
+            val interstitialSlotOn = appConfigViewModel.appResponse.value?.result?.interstitial_3_on_off == "on"
+
+            if (adsEnabled && appOpenSlotOn && activity != null && adType == ColdStartAdType.APP_OPEN) {
                 if (!AppOpenAdManager.isReady()) {
                     showAdLoader = true
                     waitUntilAdReady { AppOpenAdManager.isReady() }
@@ -192,7 +195,7 @@ fun SplashScreen(onTimeout: (String) -> Unit, skipAnimation: Boolean = false) {
                     AppOpenAdManager.show(activity) { onTimeout(nextRoute) }
                     return@LaunchedEffect
                 }
-            } else if (adsEnabled && activity != null && adType == ColdStartAdType.INTERSTITIAL) {
+            } else if (adsEnabled && interstitialSlotOn && activity != null && adType == ColdStartAdType.INTERSTITIAL) {
                 val interstitialAdUnitId =
                     appConfigViewModel.appResponse.value?.result?.interstitial_3
                 if (!interstitialAdUnitId.isNullOrBlank()) {
