@@ -1,4 +1,4 @@
-﻿package com.message.sms.texting.app.repository
+package com.message.sms.texting.app.repository
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -7,8 +7,10 @@ import androidx.room.Query
 import androidx.paging.PagingSource
 import com.message.sms.texting.app.model.SmsMessage
 import kotlinx.coroutines.flow.Flow
+import androidx.room.RewriteQueriesToDropUnusedColumns
 
 @Dao
+@RewriteQueriesToDropUnusedColumns
 interface SmsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessages(messages: List<SmsMessage>)

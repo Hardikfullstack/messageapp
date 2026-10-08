@@ -1,4 +1,4 @@
-﻿package com.message.sms.texting.app.viewmodel
+package com.message.sms.texting.app.viewmodel
 
 import android.app.Application
 import android.content.Context
